@@ -44,7 +44,7 @@ with st.expander("📝 Registrar Nuevo Lote", expanded=True):
             mantenimiento = st.number_input("Mantenimiento Mensual", min_value=0.0, step=10000.0)
             
             # CORRECCIÓN DEFINITIVA DE COLUMNAS
-            col_cant, col_unid = st.columns()
+            col_cant, col_unid = st.columns(2)
             with col_cant:
                 cantidad_raw = st.number_input("Cantidad cosechada", min_value=0.01)
             with col_unid:
