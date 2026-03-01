@@ -43,13 +43,14 @@ with st.expander("📝 Registrar Nuevo Lote", expanded=True):
             inversion = st.number_input("Inversión Inicial", min_value=0.0, step=100000.0)
             mantenimiento = st.number_input("Mantenimiento Mensual", min_value=0.0, step=10000.0)
             
-            # ESTA ES LA LÍNEA DEL ERROR CORREGIDA
+            # CORRECCIÓN DEFINITIVA DE COLUMNAS
             col_cant, col_unid = st.columns()
             with col_cant:
                 cantidad_raw = st.number_input("Cantidad cosechada", min_value=0.01)
             with col_unid:
                 unidad = st.selectbox("Unidad", ["Kilos", "Libras", "Quintales", "Gramos"])
         
+        # Botón dentro del formulario
         boton = st.form_submit_button("🚀 Calcular y Guardar")
 
 # 5. Lógica de cálculo
@@ -69,7 +70,8 @@ if boton:
     if os.path.exists(archivo_db):
         df_ex = pd.read_excel(archivo_db)
         df_final = pd.concat([df_ex, nueva_fila], ignore_index=True)
-    else: df_final = nueva_fila
+    else: 
+        df_final = nueva_fila
     
     df_final.to_excel(archivo_db, index=False)
     st.success(f"✅ ¡{nombre} guardado!")
@@ -86,14 +88,18 @@ if boton:
         m2.metric("Promedio sector", formato_cop(promedio_sector))
         m3.metric("Diferencia", f"{dif:+.1f}%", delta=f"{dif:+.1f}%", delta_color="inverse")
     else:
-        st.info("💡 Primer registro de este cultivo. ¡Serás la referencia!")
+        st.info(f"💡 Eres el primer dato de {cultivo_sel}. ¡Tu costo servirá de referencia!")
 
 # 6. Historial
 st.markdown("---")
 if os.path.exists(archivo_db):
-    df_vista = pd.read_excel(archivo_db)
-    st.subheader("📋 Historial de Producción")
-    for col in ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]:
-        if col in df_vista.columns: df_vista[col] = df_vista[col].apply(formato_cop)
-    st.dataframe(df_vista.drop(columns=["Kilos_Totales"], errors='ignore'), use_container_width=True)
+    try:
+        df_vista = pd.read_excel(archivo_db)
+        st.subheader("📋 Historial de Producción")
+        for col in ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]:
+            if col in df_vista.columns: 
+                df_vista[col] = df_vista[col].apply(formato_cop)
+        st.dataframe(df_vista.drop(columns=["Kilos_Totales"], errors='ignore'), use_container_width=True)
+    except:
+        st.error("Error al leer la base de datos. Asegúrate de registrar una finca primero.")
     
