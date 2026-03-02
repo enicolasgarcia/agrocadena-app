@@ -87,6 +87,26 @@ if boton:
         m1.metric("Tu costo/Kg", formato_cop(precio_seguro))
         m2.metric("Promedio sector", formato_cop(promedio_sector))
         m3.metric("Diferencia", f"{dif:+.1f}%", delta=f"{dif:+.1f}%", delta_color="inverse")
+
+    # --- NUEVA SECCIÓN: INTERPRETACIÓN AUTOMÁTICA ---
+        st.markdown("#### 💡 Recomendación del Asesor Virtual")
+        
+        # Interpretación de eficiencia
+        if dif > 20:
+            st.error(f"⚠️ **Alerta de Sobrecosto:** Tus costos están muy por encima del promedio. Revisa desperdicios o insumos caros.")
+        elif 0 < dif <= 20:
+            st.warning(f"🧐 **Oportunidad de Mejora:** Estás cerca del promedio, pero puedes optimizar gastos.")
+        else:
+            st.success(f"🌟 **¡Excelente Gestión!** Eres más eficiente que el promedio de la zona.")
+
+        # Comparativa con el Precio de Mercado (Corabastos)
+        precio_mercado = precios_market.get(cultivo_sel, 0)
+        if precio_mercado > 0:
+            margen = precio_mercado - precio_seguro
+            if margen > 0:
+                st.info(f"💰 **Análisis de Ganancia:** El precio en Corabastos es {formato_cop(precio_mercado)}. Ganarías **{formato_cop(margen)}** por kilo.")
+            else:
+                st.error(f"📉 **Riesgo:** El precio de mercado ({formato_cop(precio_mercado)}) no cubre tus costos actuales.")
     else:
         st.info(f"💡 Eres el primer dato de {cultivo_sel}. ¡Tu costo servirá de referencia!")
 
