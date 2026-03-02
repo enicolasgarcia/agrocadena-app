@@ -122,4 +122,38 @@ if os.path.exists(archivo_db):
         st.dataframe(df_vista.drop(columns=["Kilos_Totales"], errors='ignore'), use_container_width=True)
     except:
         st.error("Error al leer la base de datos. Asegúrate de registrar una finca primero.")
+
+# 7. Buscador de Reportes Individuales
+st.markdown("---")
+st.subheader("🔍 Consultar Reporte por Finca")
+
+if os.path.exists(archivo_db):
+    df_consulta = pd.read_excel(archivo_db)
+    
+    # Crear una lista de nombres de fincas para elegir
+    lista_fincas = df_consulta["Finca"].unique()
+    finca_elegida = st.selectbox("Seleccione una finca para ver su análisis detallado:", lista_fincas)
+    
+    if finca_elegida:
+        # Extraer los datos de esa finca específica
+        datos_finca = df_consulta[df_consulta["Finca"] == finca_elegida].iloc[-1]
+        
+        # Calcular promedio del sector para ese cultivo específico
+        cultivo_finca = datos_finca["Cultivo"]
+        costo_finca = datos_finca["Precio_Seguro_x_Kg"]
+        promedio_zona = df_consulta[df_consulta["Cultivo"] == cultivo_finca]["Precio_Seguro_x_Kg"].mean()
+        
+        # Mostrar el análisis de nuevo
+        c1, c2 = st.columns(2)
+        c1.metric(f"Costo en {finca_elegida}", formato_cop(costo_finca))
+        
+        # Calcular diferencia
+        dif_consulta = ((costo_finca - promedio_zona) / promedio_zona) * 100
+        c2.metric("Vs Promedio Sector", f"{dif_consulta:+.1f}%", delta=f"{dif_consulta:+.1f}%", delta_color="inverse")
+        
+        # El Asesor Virtual para esta finca guardada
+        if costo_finca > promedio_zona:
+            st.warning(f"⚠️ En **{finca_elegida}**, tus costos están por encima del promedio de la zona.")
+        else:
+            st.success(f"🟢 **{finca_elegida}** es una de tus fincas más eficientes.")
     
