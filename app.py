@@ -152,8 +152,19 @@ if os.path.exists(archivo_db):
         c2.metric("Vs Promedio Sector", f"{dif_consulta:+.1f}%", delta=f"{dif_consulta:+.1f}%", delta_color="inverse")
         
         # El Asesor Virtual para esta finca guardada
-        if costo_finca > promedio_zona:
-            st.warning(f"⚠️ En **{finca_elegida}**, tus costos están por encima del promedio de la zona.")
+     # --- ANÁLISIS DETALLADO DE CAUSAS Y ACCIONES ---
+        st.markdown("---")
+        if dif_consulta > 20:
+            st.error("### 🔴 Análisis de Sobrecosto Crítico")
+            st.write(f"**📌 Posible causa:** En **{finca_elegida}**, la producción fue baja frente al capital invertido o hubo un gasto excesivo en insumos.")
+            st.write("**📌 Acción sugerida:** Revisar el rendimiento por hectárea, negociar precios de insumos o evaluar la eficiencia de la mano de obra.")
+            
+        elif 0 < dif_consulta <= 20:
+            st.warning("### 🟡 Análisis de Eficiencia Media")
+            st.write(f"**📌 Posible causa:** Costos ligeramente elevados en mantenimiento o una cosecha que no alcanzó el peso óptimo esperado.")
+            st.write("**📌 Acción sugerida:** Implementar un control de gastos más riguroso y optimizar los ciclos de fertilización.")
+            
         else:
-            st.success(f"🟢 **{finca_elegida}** es una de tus fincas más eficientes.")
-    
+            st.success("### 🟢 Análisis de Alta Eficiencia")
+            st.write(f"**📌 Posible causa:** Excelente equilibrio técnico-económico. Los recursos se usaron de manera óptima en **{finca_elegida}**.")
+            st.write("**📌 Acción sugerida:** Documentar el manejo de este lote para replicar el éxito en otras fincas o ciclos.")
