@@ -123,15 +123,31 @@ if os.path.exists(archivo_db):
         
         st.info(f"📅 Mostrando último análisis para **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
         
-        # Lógica de Diagnóstico
-        prom_actual = df_ver[df_ver["Cultivo"] == ultima_finca["Cultivo"]]["Precio_Seguro_x_Kg"].mean()
-        dif_h = ((ultima_finca["Precio_Seguro_x_Kg"] - prom_actual) / prom_actual) * 100
+       # Asesor Virtual - Lógica de Diagnóstico Actualizada
+        st.markdown("---") # Una línea divisoria antes del diagnóstico
         
-        col_h1, col_h2 = st.columns(2)
-        col_h1.metric("Costo Registrado", formato_cop(ultima_finca["Precio_Seguro_x_Kg"]))
-        col_h2.metric("Estado vs Actualidad", f"{dif_h:+.1f}%", delta=f"{dif_h:+.1f}%", delta_color="inverse")
-
-        if dif_h > 20:
-            st.error(f"### 🔴 Análisis de Sobrecosto\n**📌 Posible causa:** Rendimiento bajo en la fecha {ultima_finca['Fecha']}.\n**📌 Acción:** Revisar insumos de ese periodo.")
+        if dif > 20:
+            st.error(f"### 🔴 Análisis de Sobrecosto")
+            # Texto con saltos de línea (\n) para separar renglones
+            mensaje_sobredesc = (
+                f"**📌 Posible causa:**\n"
+                f"Tus costos de producción son significativamente altos ({dif:+.1f}% vs promedio). "
+                f"Esto puede deberse a un bajo rendimiento por hectárea o a precios de insumos elevados en este ciclo.\n\n"
+                f"**📌 Acción Sugerida:**\n"
+                f"Realiza una auditoría detallada de los insumos clave (fertilizantes, mano de obra). "
+                f"Considera renegociar con proveedores o ajustar las prácticas de manejo del cultivo para mejorar la eficiencia."
+            )
+            st.markdown(mensaje_sobredesc)
+            
         else:
-            st.success(f"### 🟢 Análisis de Eficiencia\n**📌 Posible causa:** Buen manejo de recursos en este ciclo.\n**📌 Acción:** Replicar este método en la próxima siembra.")
+            st.success(f"### 🟢 Análisis de Eficiencia")
+            # Texto con saltos de línea (\n) para separar renglones
+            mensaje_eficiencia = (
+                f"**📌 Posible causa:**\n"
+                f"Has logrado mantener tus costos bajo control o cercanos al promedio ({dif:+.1f}% vs promedio). "
+                f"Esto sugiere un buen manejo de recursos y un rendimiento adecuado del cultivo.\n\n"
+                f"**📌 Acción Sugerida:**\n"
+                f"¡Continúa con tus prácticas actuales! Registra qué técnicas o proveedores te dieron mejores resultados "
+                f"en este ciclo para intentar replicar el éxito en la próxima cosecha."
+            )
+            st.markdown(mensaje_eficiencia)
