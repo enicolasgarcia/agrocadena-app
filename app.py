@@ -100,7 +100,7 @@ if boton:
 # --- 3. HISTORIAL Y BUSCADOR ---
 st.divider()
 if os.path.exists(archivo_db):
-  df_ver = pd.read_excel(archivo_db)
+   df_ver = pd.read_excel(archivo_db)
     
     # --- RESCATE DE DATOS ANTIGUOS ---
     if 'Fecha' not in df_ver.columns:
@@ -111,6 +111,7 @@ if os.path.exists(archivo_db):
     
     st.subheader("📊 Historial General de Registros")
     st.dataframe(df_ver, use_container_width=True)
+    
     # --- 4. CONSULTAR REPORTE POR FINCA (CON FECHAS) ---
     st.subheader("🔍 Consultar Reporte por Finca")
     lista_fincas = df_ver["Finca"].unique()
