@@ -18,7 +18,10 @@ precios_market = {
     "Frijol Verde": 4500,
     "Aguacate Hass": 8500,
     "Cebolla Larga": 3200,
-    "Tomate Chonto": 3800
+    "Tomate Chonto": 3800,
+    "Cafe": 15000,
+    "Fresa": 6000,
+    "Uchuva": 7000
 }
 
 # --- TÍTULO ---
