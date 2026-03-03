@@ -112,46 +112,49 @@ if os.path.exists(archivo_db):
    st.subheader("📊 Historial General de Registros")
    st.dataframe(df_ver, use_container_width=True)
     
-   # --- 4. CONSULTAR REPORTE POR FINCA (CON FECHAS) ---
-st.subheader("🔍 Consultar Reporte por Finca")
+  # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
+st.subheader("🔍 Consultar Reporte Detallado")
 lista_fincas = df_ver["Finca"].unique()
-finca_elegida = st.selectbox("Seleccione una finca:", lista_fincas)
+finca_elegida = st.selectbox("1. Seleccione una finca:", lista_fincas)
 
 if finca_elegida:
-    # 1. Filtramos y calculamos la diferencia específica para esta finca
-    datos_finca = df_ver[df_ver["Finca"] == finca_elegida].sort_values(by="Fecha")
-    ultima_finca = datos_finca.iloc[-1]
+    # Filtramos cultivos que existen solo en esa finca
+    cultivos_finca = df_ver[df_ver["Finca"] == finca_elegida]["Cultivo"].unique()
+    cultivo_elegido = st.selectbox("2. Seleccione el cultivo a consultar:", cultivos_finca)
     
-    # Calculamos el promedio del cultivo para comparar
-    prom_actual = df_ver[df_ver["Cultivo"] == ultima_finca["Cultivo"]]["Precio_Seguro_x_Kg"].mean()
-    dif_h = ((ultima_finca["Precio_Seguro_x_Kg"] - prom_actual) / prom_actual) * 100
-    
-    st.info(f"📅 Mostrando último análisis para **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
-    
-    col_h1, col_h2 = st.columns(2)
-    col_h1.metric("Costo Registrado", formato_cop(ultima_finca["Precio_Seguro_x_Kg"]))
-    col_h2.metric("Estado vs Promedio", f"{dif_h:+.1f}%", delta=f"{dif_h:+.1f}%", delta_color="inverse")
+    if cultivo_elegido:
+        # Filtramos por Finca Y Cultivo, luego ordenamos por fecha
+        datos_especificos = df_ver[(df_ver["Finca"] == finca_elegida) & (df_ver["Cultivo"] == cultivo_elegido)].sort_values(by="Fecha")
+        ultima_finca = datos_especificos.iloc[-1]
+        
+        # Calculamos promedio general de ese cultivo para comparar
+        prom_actual = df_ver[df_ver["Cultivo"] == cultivo_elegido]["Precio_Seguro_x_Kg"].mean()
+        dif_h = ((ultima_finca["Precio_Seguro_x_Kg"] - prom_actual) / prom_actual) * 100
+        
+        st.info(f"📅 Mostrando último análisis de **{cultivo_elegido}** en **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
+        
+        col_h1, col_h2 = st.columns(2)
+        col_h1.metric("Costo Registrado", formato_cop(ultima_finca["Precio_Seguro_x_Kg"]))
+        col_h2.metric("Estado vs Promedio", f"{dif_h:+.1f}%", delta=f"{dif_h:+.1f}%", delta_color="inverse")
 
-    st.markdown("---") 
+        st.markdown("---") 
 
-    # 2. Diagnóstico con renglones separados
-    if dif_h > 20:
-        st.error(f"### 🔴 Análisis de Sobrecosto")
-        st.markdown(
-            f"**📌 Posible causa:**\n"
-            f"Tus costos actuales ({formato_cop(ultima_finca['Precio_Seguro_x_Kg'])}) superan el promedio del cultivo por un {dif_h:.1f}%. "
-            f"Esto suele ocurrir por baja densidad de siembra o costos logísticos elevados.\n\n"
-            f"**📌 Acción Sugerida:**\n"
-            f"Revisa el registro de gastos de este ciclo. Si el costo es recurrente, considera evaluar la calidad de las semillas "
-            f"o buscar proveedores de insumos más competitivos."
-        )
-    else:
-        st.success(f"### 🟢 Análisis de Eficiencia")
-        st.markdown(
-            f"**📌 Posible causa:**\n"
-            f"Has logrado una excelente gestión. Tu costo está un {abs(dif_h):.1f}% por debajo del promedio. "
-            f"Esto indica un uso óptimo de fertilizantes y mano de obra.\n\n"
-            f"**📌 Acción Sugerida:**\n"
-            f"¡Excelente trabajo! Documenta qué hiciste diferente en este ciclo para repetirlo. "
-            f"Mantener este nivel de eficiencia te permitirá ser más rentable frente a caídas de precio en el mercado."
-        )
+        # 3. Diagnóstico con renglones separados
+        if dif_h > 20:
+            st.error(f"### 🔴 Análisis de Sobrecosto")
+            st.markdown(
+                f"**📌 Posible causa:**\n"
+                f"Tus costos para {cultivo_elegido} ({formato_cop(ultima_finca['Precio_Seguro_x_Kg'])}) superan el promedio por un {dif_h:.1f}%. "
+                f"Esto puede ser por baja densidad de siembra o fletes costosos.\n\n"
+                f"**📌 Acción Sugerida:**\n"
+                f"Revisa los insumos aplicados específicamente a la {cultivo_elegido}. Evalúa si puedes optimizar la mano de obra en esta labor."
+            )
+        else:
+            st.success(f"### 🟢 Análisis de Eficiencia")
+            st.markdown(
+                f"**📌 Posible causa:**\n"
+                f"¡Excelente manejo! El costo de tu {cultivo_elegido} está un {abs(dif_h):.1f}% por debajo del promedio. "
+                f"Estás optimizando muy bien los recursos en esta finca.\n\n"
+                f"**📌 Acción Sugerida:**\n"
+                f"Revisa qué fertilizante o técnica usaste en este lote de {cultivo_elegido} para aplicarlo en tus otras fincas."
+            )
