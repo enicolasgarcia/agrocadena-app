@@ -111,15 +111,18 @@ if os.path.exists(archivo_db):
     
    st.subheader("📊 Historial General de Registros")
     
-   st.dataframe(
+    st.dataframe(
         df_ver, 
         use_container_width=True,
         column_config={
-            # format="$ %,d" pone el punto de mil y quita decimales
+            # format="$ %,d" -> Pone el signo $, separador de miles y CERO decimales
             "Inversión": st.column_config.NumberColumn("Inversión", format="$ %,d"),
             "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %,d"),
-            # format="$ %,.2f" pone punto de mil y deja solo 2 decimales
-            "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.2f"),
+            
+            # format="$ %,.0f" -> Pone el signo $, separador de miles y redondea sin decimales
+            "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.0f"),
+            
+            # Mostramos la producción como número entero seguido de "Kg"
             "Producción": st.column_config.NumberColumn("Producción", format="%d Kg"),
             "Fecha": st.column_config.DateColumn("Fecha de Registro")
         }
