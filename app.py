@@ -114,7 +114,7 @@ if os.path.exists(archivo_db):
    columnas_num = ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]
    for col in columnas_num:
         df_limpio[col] = df_limpio[col].apply(lambda x: f"$ {x:,.0f}")
-    st.dataframe(df_limpio, use_container_width=True)
+   st.dataframe(df_limpio, use_container_width=True)
     
   # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
 st.subheader("🔍 Consultar Reporte Detallado")
