@@ -109,8 +109,8 @@ if os.path.exists(archivo_db):
         df_ver['Fecha'] = df_ver['Fecha'].fillna("2026-02-14")
     # --------------------------------
     
-    st.subheader("📊 Historial General de Registros")
-    st.dataframe(df_ver, use_container_width=True)
+   st.subheader("📊 Historial General de Registros")
+   st.dataframe(df_ver, use_container_width=True)
     
     # --- 4. CONSULTAR REPORTE POR FINCA (CON FECHAS) ---
     st.subheader("🔍 Consultar Reporte por Finca")
