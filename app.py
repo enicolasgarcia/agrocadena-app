@@ -111,15 +111,16 @@ if os.path.exists(archivo_db):
     
    st.subheader("📊 Historial General de Registros")
     
-    # Esta configuración hace que los números grandes sean fáciles de leer
-   st.dataframe(
+    st.dataframe(
         df_ver, 
         use_container_width=True,
         column_config={
-            "Inversión": st.column_config.NumberColumn("Inversión", format="$ %d"),
-            "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %d"),
-            "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %.2f"),
-            "Producción": st.column_config.TextColumn("Producción (Kilos)"),
+            # format="$ %,d" pone el punto de mil y quita decimales
+            "Inversión": st.column_config.NumberColumn("Inversión", format="$ %,d"),
+            "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %,d"),
+            # format="$ %,.2f" pone punto de mil y deja solo 2 decimales
+            "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.2f"),
+            "Producción": st.column_config.NumberColumn("Producción", format="%d Kg"),
             "Fecha": st.column_config.DateColumn("Fecha de Registro")
         }
     )
