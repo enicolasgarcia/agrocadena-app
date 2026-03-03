@@ -112,42 +112,46 @@ if os.path.exists(archivo_db):
    st.subheader("📊 Historial General de Registros")
    st.dataframe(df_ver, use_container_width=True)
     
-    # --- 4. CONSULTAR REPORTE POR FINCA (CON FECHAS) ---
-   st.subheader("🔍 Consultar Reporte por Finca")
-   lista_fincas = df_ver["Finca"].unique()
-   finca_elegida = st.selectbox("Seleccione una finca:", lista_fincas)
+   # --- 4. CONSULTAR REPORTE POR FINCA (CON FECHAS) ---
+st.subheader("🔍 Consultar Reporte por Finca")
+lista_fincas = df_ver["Finca"].unique()
+finca_elegida = st.selectbox("Seleccione una finca:", lista_fincas)
+
+if finca_elegida:
+    # 1. Filtramos y calculamos la diferencia específica para esta finca
+    datos_finca = df_ver[df_ver["Finca"] == finca_elegida].sort_values(by="Fecha")
+    ultima_finca = datos_finca.iloc[-1]
     
-   if finca_elegida:
-        datos_finca = df_ver[df_ver["Finca"] == finca_elegida].sort_values(by="Fecha")
-        ultima_finca = datos_finca.iloc[-1]
-        
-        st.info(f"📅 Mostrando último análisis para **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
-        
-       # Asesor Virtual - Lógica de Diagnóstico Actualizada
-        st.markdown("---") # Una línea divisoria antes del diagnóstico
-        
-        if dif > 20:
-            st.error(f"### 🔴 Análisis de Sobrecosto")
-            # Texto con saltos de línea (\n) para separar renglones
-            mensaje_sobredesc = (
-                f"**📌 Posible causa:**\n"
-                f"Tus costos de producción son significativamente altos ({dif:+.1f}% vs promedio). "
-                f"Esto puede deberse a un bajo rendimiento por hectárea o a precios de insumos elevados en este ciclo.\n\n"
-                f"**📌 Acción Sugerida:**\n"
-                f"Realiza una auditoría detallada de los insumos clave (fertilizantes, mano de obra). "
-                f"Considera renegociar con proveedores o ajustar las prácticas de manejo del cultivo para mejorar la eficiencia."
-            )
-            st.markdown(mensaje_sobredesc)
-            
-        else:
-            st.success(f"### 🟢 Análisis de Eficiencia")
-            # Texto con saltos de línea (\n) para separar renglones
-            mensaje_eficiencia = (
-                f"**📌 Posible causa:**\n"
-                f"Has logrado mantener tus costos bajo control o cercanos al promedio ({dif:+.1f}% vs promedio). "
-                f"Esto sugiere un buen manejo de recursos y un rendimiento adecuado del cultivo.\n\n"
-                f"**📌 Acción Sugerida:**\n"
-                f"¡Continúa con tus prácticas actuales! Registra qué técnicas o proveedores te dieron mejores resultados "
-                f"en este ciclo para intentar replicar el éxito en la próxima cosecha."
-            )
-            st.markdown(mensaje_eficiencia)
+    # Calculamos el promedio del cultivo para comparar
+    prom_actual = df_ver[df_ver["Cultivo"] == ultima_finca["Cultivo"]]["Precio_Seguro_x_Kg"].mean()
+    dif_h = ((ultima_finca["Precio_Seguro_x_Kg"] - prom_actual) / prom_actual) * 100
+    
+    st.info(f"📅 Mostrando último análisis para **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
+    
+    col_h1, col_h2 = st.columns(2)
+    col_h1.metric("Costo Registrado", formato_cop(ultima_finca["Precio_Seguro_x_Kg"]))
+    col_h2.metric("Estado vs Promedio", f"{dif_h:+.1f}%", delta=f"{dif_h:+.1f}%", delta_color="inverse")
+
+    st.markdown("---") 
+
+    # 2. Diagnóstico con renglones separados
+    if dif_h > 20:
+        st.error(f"### 🔴 Análisis de Sobrecosto")
+        st.markdown(
+            f"**📌 Posible causa:**\n"
+            f"Tus costos actuales ({formato_cop(ultima_finca['Precio_Seguro_x_Kg'])}) superan el promedio del cultivo por un {dif_h:.1f}%. "
+            f"Esto suele ocurrir por baja densidad de siembra o costos logísticos elevados.\n\n"
+            f"**📌 Acción Sugerida:**\n"
+            f"Revisa el registro de gastos de este ciclo. Si el costo es recurrente, considera evaluar la calidad de las semillas "
+            f"o buscar proveedores de insumos más competitivos."
+        )
+    else:
+        st.success(f"### 🟢 Análisis de Eficiencia")
+        st.markdown(
+            f"**📌 Posible causa:**\n"
+            f"Has logrado una excelente gestión. Tu costo está un {abs(dif_h):.1f}% por debajo del promedio. "
+            f"Esto indica un uso óptimo de fertilizantes y mano de obra.\n\n"
+            f"**📌 Acción Sugerida:**\n"
+            f"¡Excelente trabajo! Documenta qué hiciste diferente en este ciclo para repetirlo. "
+            f"Mantener este nivel de eficiencia te permitirá ser más rentable frente a caídas de precio en el mercado."
+        )
