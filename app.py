@@ -1,170 +1,129 @@
 import streamlit as st
 import pandas as pd
 import os
-import re
+import datetime
 
-# 1. Configuración de página
-st.set_page_config(page_title="App Agrícola Pro", layout="wide")
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Asesor Agrícola Pro", layout="wide")
 
-# 2. Diccionario de cultivos
-precios_market = {
-    "café": 15000, "aguacate papelillo": 10550, "granadilla": 7666, "patilla": 1900,
-    "ahuyama": 1650, "pimentón": 5500, "uchuva": 5500, "lulo": 5400,
-    "guanábana": 4750, "piña gold": 2500, "banano criollo": 2350,
-    "plátano hartón": 4625, "cebolla junca": 2250, "tomate chonto": 2613,
-    "frijol verde": 4900, "aguacate hass": 6500, "mango tommy": 2700,
-    "mandarina arrayana": 4318, "papa": 2800, "fresa": 8500
-}
-
-# 3. Funciones de formato
+# --- FUNCIONES DE APOYO ---
 def formato_cop(valor):
-    try:
-        return f"$ {float(valor):,.0f}".replace(",", ".")
-    except: return str(valor)
+    return f"$ {valor:,.0f}".replace(",", ".")
 
-def limpiar_produccion(texto):
-    if pd.isna(texto): return ""
-    texto = str(texto)
-    return re.sub(r'(\.\d{1,2})\d+', r'\1', texto)
-
-# 4. Interfaz Principal
-st.title("🚜 Aplicación Agrícola Pro")
-st.markdown("---")
 archivo_db = "fincas_registradas.xlsx"
 
-with st.expander("📝 Registrar Nuevo Lote", expanded=True):
-    with st.form("registro_pro"):
-        c1, c2 = st.columns(2)
-        with c1:
-            nombre = st.text_input("Nombre de la Finca/Lote")
-            cultivo_sel = st.selectbox("Seleccione el Cultivo", sorted(precios_market.keys()))
-            meses = st.slider("Ciclo del cultivo (meses)", 1, 24, 6)
-        with c2:
-            inversion = st.number_input("Inversión Inicial", min_value=0.0, step=100000.0)
-            mantenimiento = st.number_input("Mantenimiento Mensual", min_value=0.0, step=10000.0)
-            
-            # CORRECCIÓN DEFINITIVA DE COLUMNAS
-            col_cant, col_unid = st.columns(2)
-            with col_cant:
-                cantidad_raw = st.number_input("Cantidad cosechada", min_value=0.01)
-            with col_unid:
-                unidad = st.selectbox("Unidad", ["Kilos", "Libras", "Quintales", "Gramos"])
-        
-        # Botón dentro del formulario
-        boton = st.form_submit_button("🚀 Calcular y Guardar")
+# Diccionario de precios de referencia (Corabastos aproximado)
+precios_market = {
+    "Papa Sabanera": 7500,
+    "Frijol Verde": 4500,
+    "Aguacate Hass": 8500,
+    "Cebolla Larga": 3200,
+    "Tomate Chonto": 3800
+}
 
-# 5. Lógica de cálculo
+# --- TÍTULO ---
+st.title("🚜 Sistema de Gestión y Eficiencia Agrícola")
+st.markdown("Registre sus costos y compare su rendimiento histórico.")
+
+# --- 1. FORMULARIO DE REGISTRO ---
+with st.form("registro_finca"):
+    st.subheader("📋 Registro de Nueva Cosecha")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        finca = st.text_input("Nombre de la Finca:")
+        cultivo_sel = st.selectbox("Cultivo:", list(precios_market.keys()))
+        # NUEVO: Selector de Fecha
+        fecha_registro = st.date_input("Fecha del Registro:", datetime.date.today())
+        
+    with col2:
+        costo_total = st.number_input("Costo Total de Producción ($):", min_value=0, step=10000)
+        col_cant, col_unid = st.columns([2, 1])
+        cantidad = col_cant.number_input("Cantidad Cosechada:", min_value=0.1)
+        unidad = col_unid.selectbox("Unidad:", ["Kilos", "Bultos", "Toneladas"])
+
+    boton = st.form_submit_button("🚀 Calcular y Guardar")
+
 if boton:
-    conv = {"Kilos": 1.0, "Libras": 0.5, "Quintales": 50.0, "Gramos": 0.001}
-    produccion_en_kilos = cantidad_raw * conv[unidad]
-    costo_total = inversion + (mantenimiento * meses)
-    precio_seguro = costo_total / produccion_en_kilos
+    # Conversión a Kilos (Base estándar)
+    cantidad_kg = cantidad
+    if unidad == "Bultos": cantidad_kg = cantidad * 50
+    if unidad == "Toneladas": cantidad_kg = cantidad * 1000
     
-    nueva_fila = pd.DataFrame([{
-        "Finca": nombre, "Cultivo": cultivo_sel, "Tiempo (Meses)": meses,
-        "Inversión": inversion, "Costo_Total": costo_total,
-        "Precio_Seguro_x_Kg": precio_seguro, "Producción": f"{cantidad_raw} {unidad}",
-        "Kilos_Totales": produccion_en_kilos
-    }])
+    precio_seguro = costo_total / cantidad_kg
     
+    # Crear DataFrame con el nuevo registro incluyendo FECHA
+    nuevo_dato = pd.DataFrame({
+        "Fecha": [fecha_registro.strftime("%Y-%m-%d")],
+        "Finca": [finca],
+        "Cultivo": [cultivo_sel],
+        "Costo_Total": [costo_total],
+        "Cantidad_Kg": [cantidad_kg],
+        "Precio_Seguro_x_Kg": [precio_seguro]
+    })
+    
+    # Guardar en Excel
     if os.path.exists(archivo_db):
-        df_ex = pd.read_excel(archivo_db)
-        df_final = pd.concat([df_ex, nueva_fila], ignore_index=True)
-    else: 
-        df_final = nueva_fila
-    
-    df_final.to_excel(archivo_db, index=False)
-    st.success(f"✅ ¡{nombre} guardado!")
-
-    # Indicador de Eficiencia
-    datos_cultivo = df_final[df_final['Cultivo'] == cultivo_sel]
-    promedio_sector = datos_cultivo['Precio_Seguro_x_Kg'].mean()
-    
-    st.markdown("### 📊 Indicador de Eficiencia")
-    if len(datos_cultivo) > 1:
-        dif = ((precio_seguro - promedio_sector) / promedio_sector) * 100
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Tu costo/Kg", formato_cop(precio_seguro))
-        m2.metric("Promedio sector", formato_cop(promedio_sector))
-        m3.metric("Diferencia", f"{dif:+.1f}%", delta=f"{dif:+.1f}%", delta_color="inverse")
-
-    # --- NUEVA SECCIÓN: INTERPRETACIÓN AUTOMÁTICA ---
-        st.markdown("#### 💡 Recomendación del Asesor Virtual")
-        
-        # Interpretación de eficiencia
-        if dif > 20:
-            st.error(f"⚠️ **Alerta de Sobrecosto:** Tus costos están muy por encima del promedio. Revisa desperdicios o insumos caros.")
-        elif 0 < dif <= 20:
-            st.warning(f"🧐 **Oportunidad de Mejora:** Estás cerca del promedio, pero puedes optimizar gastos.")
-        else:
-            st.success(f"🌟 **¡Excelente Gestión!** Eres más eficiente que el promedio de la zona.")
-
-        # Comparativa con el Precio de Mercado (Corabastos)
-        precio_mercado = precios_market.get(cultivo_sel, 0)
-        if precio_mercado > 0:
-            margen = precio_mercado - precio_seguro
-            if margen > 0:
-                st.info(f"💰 **Análisis de Ganancia:** El precio en Corabastos es {formato_cop(precio_mercado)}. Ganarías **{formato_cop(margen)}** por kilo.")
-            else:
-                st.error(f"📉 **Riesgo:** El precio de mercado ({formato_cop(precio_mercado)}) no cubre tus costos actuales.")
+        df_existente = pd.read_excel(archivo_db)
+        df_final = pd.concat([df_existente, nuevo_dato], ignore_index=True)
     else:
-        st.info(f"💡 Eres el primer dato de {cultivo_sel}. ¡Tu costo servirá de referencia!")
+        df_final = nuevo_dato
+        
+    df_final.to_excel(archivo_db, index=False)
+    st.success(f"✅ Registro de '{finca}' guardado con éxito.")
 
-# 6. Historial
-st.markdown("---")
-if os.path.exists(archivo_db):
-    try:
-        df_vista = pd.read_excel(archivo_db)
-        st.subheader("📋 Historial de Producción")
-        for col in ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]:
-            if col in df_vista.columns: 
-                df_vista[col] = df_vista[col].apply(formato_cop)
-        st.dataframe(df_vista.drop(columns=["Kilos_Totales"], errors='ignore'), use_container_width=True)
-    except:
-        st.error("Error al leer la base de datos. Asegúrate de registrar una finca primero.")
-
-# 7. Buscador de Reportes Individuales
-st.markdown("---")
-st.subheader("🔍 Consultar Reporte por Finca")
-
-if os.path.exists(archivo_db):
-    df_consulta = pd.read_excel(archivo_db)
+    # --- 2. INDICADOR DE EFICIENCIA EN TIEMPO REAL ---
+    st.divider()
+    datos_cultivo = df_final[df_final["Cultivo"] == cultivo_sel]
     
-    # Crear una lista de nombres de fincas para elegir
-    lista_fincas = df_consulta["Finca"].unique()
-    finca_elegida = st.selectbox("Seleccione una finca para ver su análisis detallado:", lista_fincas)
+    if len(datos_cultivo) > 1:
+        promedio_sector = datos_cultivo["Precio_Seguro_x_Kg"].mean()
+        dif = ((precio_seguro - promedio_sector) / promedio_sector) * 100
+        
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Tu Costo / Kg", formato_cop(precio_seguro))
+        m2.metric("Promedio Sector", formato_cop(promedio_sector))
+        m3.metric("Diferencia", f"{dif:+.1f}%", delta=f"{dif:+.1f}%", delta_color="inverse")
+        
+        # Asesor Virtual
+        st.markdown("#### 💡 Recomendación del Asesor Virtual")
+        if dif > 20:
+            st.error(f"⚠️ **Alerta de Sobrecosto:** Tus costos están muy por encima del promedio. Revisa desperdicios.")
+        elif 0 < dif <= 20:
+            st.warning(f"🧐 **Oportunidad de Mejora:** Estás cerca del promedio, podrías optimizar.")
+        else:
+            st.success(f"🌟 **¡Excelente Gestión!** Eres más eficiente que el promedio.")
+    else:
+        st.info(f"💡 Eres el primer dato registrado para {cultivo_sel}. ¡Sigue así!")
+
+# --- 3. HISTORIAL Y BUSCADOR ---
+st.divider()
+if os.path.exists(archivo_db):
+    df_ver = pd.read_excel(archivo_db)
+    st.subheader("📊 Historial General de Registros")
+    st.dataframe(df_ver, use_container_width=True)
+    
+    # --- 4. CONSULTAR REPORTE POR FINCA (CON FECHAS) ---
+    st.subheader("🔍 Consultar Reporte por Finca")
+    lista_fincas = df_ver["Finca"].unique()
+    finca_elegida = st.selectbox("Seleccione una finca:", lista_fincas)
     
     if finca_elegida:
-        # Extraer los datos de esa finca específica
-        datos_finca = df_consulta[df_consulta["Finca"] == finca_elegida].iloc[-1]
+        datos_finca = df_ver[df_ver["Finca"] == finca_elegida].sort_values(by="Fecha")
+        ultima_finca = datos_finca.iloc[-1]
         
-        # Calcular promedio del sector para ese cultivo específico
-        cultivo_finca = datos_finca["Cultivo"]
-        costo_finca = datos_finca["Precio_Seguro_x_Kg"]
-        promedio_zona = df_consulta[df_consulta["Cultivo"] == cultivo_finca]["Precio_Seguro_x_Kg"].mean()
+        st.info(f"📅 Mostrando último análisis para **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
         
-        # Mostrar el análisis de nuevo
-        c1, c2 = st.columns(2)
-        c1.metric(f"Costo en {finca_elegida}", formato_cop(costo_finca))
+        # Lógica de Diagnóstico
+        prom_actual = df_ver[df_ver["Cultivo"] == ultima_finca["Cultivo"]]["Precio_Seguro_x_Kg"].mean()
+        dif_h = ((ultima_finca["Precio_Seguro_x_Kg"] - prom_actual) / prom_actual) * 100
         
-        # Calcular diferencia
-        dif_consulta = ((costo_finca - promedio_zona) / promedio_zona) * 100
-        c2.metric("Vs Promedio Sector", f"{dif_consulta:+.1f}%", delta=f"{dif_consulta:+.1f}%", delta_color="inverse")
-        
-        # El Asesor Virtual para esta finca guardada
-     # --- ANÁLISIS DETALLADO DE CAUSAS Y ACCIONES ---
-        st.markdown("---")
-        if dif_consulta > 20:
-            st.error("### 🔴 Análisis de Sobrecosto Crítico")
-            st.write(f"**📌 Posible causa:** En **{finca_elegida}**, la producción fue baja frente al capital invertido o hubo un gasto excesivo en insumos.")
-            st.write("**📌 Acción sugerida:** Revisar el rendimiento por hectárea, negociar precios de insumos o evaluar la eficiencia de la mano de obra.")
-            
-        elif 0 < dif_consulta <= 20:
-            st.warning("### 🟡 Análisis de Eficiencia Media")
-            st.write(f"**📌 Posible causa:** Costos ligeramente elevados en mantenimiento o una cosecha que no alcanzó el peso óptimo esperado.")
-            st.write("**📌 Acción sugerida:** Implementar un control de gastos más riguroso y optimizar los ciclos de fertilización.")
-            
+        col_h1, col_h2 = st.columns(2)
+        col_h1.metric("Costo Registrado", formato_cop(ultima_finca["Precio_Seguro_x_Kg"]))
+        col_h2.metric("Estado vs Actualidad", f"{dif_h:+.1f}%", delta=f"{dif_h:+.1f}%", delta_color="inverse")
+
+        if dif_h > 20:
+            st.error(f"### 🔴 Análisis de Sobrecosto\n**📌 Posible causa:** Rendimiento bajo en la fecha {ultima_finca['Fecha']}.\n**📌 Acción:** Revisar insumos de ese periodo.")
         else:
-            st.success("### 🟢 Análisis de Alta Eficiencia")
-            st.write(f"**📌 Posible causa:** Excelente equilibrio técnico-económico. Los recursos se usaron de manera óptima en **{finca_elegida}**.")
-            st.write("**📌 Acción sugerida:** Documentar el manejo de este lote para replicar el éxito en otras fincas o ciclos.")
+            st.success(f"### 🟢 Análisis de Eficiencia\n**📌 Posible causa:** Buen manejo de recursos en este ciclo.\n**📌 Acción:** Replicar este método en la próxima siembra.")
