@@ -109,24 +109,17 @@ if os.path.exists(archivo_db):
         df_ver['Fecha'] = df_ver['Fecha'].fillna("2026-02-14")
     # --------------------------------
     
-   st.subheader("📊 Historial General de Registros")
+st.subheader("📊 Historial General de Registros")
     
-   st.dataframe(
-        df_ver, 
-        use_container_width=True,
-        column_config={
-            # format="$ %,d" -> Pone el signo $, separador de miles y CERO decimales
-            "Inversión": st.column_config.NumberColumn("Inversión", format="$ %,d"),
-            "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %,d"),
-            
-            # format="$ %,.0f" -> Pone el signo $, separador de miles y redondea sin decimales
-            "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.0f"),
-            
-            # Mostramos la producción como número entero seguido de "Kg"
-            "Producción": st.column_config.NumberColumn("Producción", format="%d Kg"),
-            "Fecha": st.column_config.DateColumn("Fecha de Registro")
-        }
-    )
+    # Configuración de tabla simplificada
+    config_tabla = {
+        "Inversión": st.column_config.NumberColumn("Inversión", format="$ %,d"),
+        "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %,d"),
+        "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.0f"),
+        "Producción": st.column_config.NumberColumn("Producción", format="%d Kg")
+    }
+    
+    st.dataframe(df_ver, use_container_width=True, column_config=config_tabla)
     
   # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
 st.subheader("🔍 Consultar Reporte Detallado")
