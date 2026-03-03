@@ -109,17 +109,12 @@ if os.path.exists(archivo_db):
         df_ver['Fecha'] = df_ver['Fecha'].fillna("2026-02-14")
     # --------------------------------
     
-st.subheader("📊 Historial General de Registros")
-    
-    # Configuración de tabla simplificada
-config_tabla = {
-        "Inversión": st.column_config.NumberColumn("Inversión", format="$ %,d"),
-        "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %,d"),
-        "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.0f"),
-        "Producción": st.column_config.NumberColumn("Producción", format="%d Kg")
-    }
-    
-st.dataframe(df_ver, use_container_width=True, column_config=config_tabla)
+   st.subheader("📊 Historial General de Registros")
+    df_limpio = df_ver.copy()
+    columnas_num = ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]
+   for col in columnas_num:
+        df_limpio[col] = df_limpio[col].apply(lambda x: f"$ {x:,.0f}")
+    st.dataframe(df_limpio, use_container_width=True)
     
   # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
 st.subheader("🔍 Consultar Reporte Detallado")
