@@ -117,7 +117,7 @@ if os.path.exists(archivo_db):
    lista_fincas = df_ver["Finca"].unique()
    finca_elegida = st.selectbox("Seleccione una finca:", lista_fincas)
     
-    if finca_elegida:
+   if finca_elegida:
         datos_finca = df_ver[df_ver["Finca"] == finca_elegida].sort_values(by="Fecha")
         ultima_finca = datos_finca.iloc[-1]
         
