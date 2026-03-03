@@ -110,7 +110,19 @@ if os.path.exists(archivo_db):
     # --------------------------------
     
    st.subheader("📊 Historial General de Registros")
-   st.dataframe(df_ver, use_container_width=True)
+    
+    # Esta configuración hace que los números grandes sean fáciles de leer
+    st.dataframe(
+        df_ver, 
+        use_container_width=True,
+        column_config={
+            "Inversión": st.column_config.NumberColumn("Inversión", format="$ %d"),
+            "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %d"),
+            "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %.2f"),
+            "Producción": st.column_config.TextColumn("Producción (Kilos)"),
+            "Fecha": st.column_config.DateColumn("Fecha de Registro")
+        }
+    )
     
   # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
 st.subheader("🔍 Consultar Reporte Detallado")
