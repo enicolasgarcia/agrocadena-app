@@ -111,7 +111,7 @@ if os.path.exists(archivo_db):
     
    st.subheader("📊 Historial General de Registros")
     
-    st.dataframe(
+   st.dataframe(
         df_ver, 
         use_container_width=True,
         column_config={
