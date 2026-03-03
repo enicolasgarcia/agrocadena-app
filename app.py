@@ -21,7 +21,15 @@ precios_market = {
     "Tomate Chonto": 3800,
     "Cafe": 15000,
     "Fresa": 6000,
-    "Uchuva": 7000
+    "Uchuva": 7000,
+    "Arveja Verde": 4800,
+    "Habichuela": 4800,
+    "Lulo": 5200,
+    "Zanahoria": 1800,
+    "Cebolla Cabezona Blanca": 2400,
+    "Tomate de Arbol": 3600,
+    "Papa Criolla": 2500,
+    "Pimenton": 3000
 }
 
 # --- TÍTULO ---
