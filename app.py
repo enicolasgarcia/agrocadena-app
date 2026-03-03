@@ -29,7 +29,14 @@ precios_market = {
     "Cebolla Cabezona Blanca": 2400,
     "Tomate de Arbol": 3600,
     "Papa Criolla": 2500,
-    "Pimenton": 3000
+    "Pimenton": 3000,
+    "Mora de Castilla": 4000,
+    "Mango Tomy": 5000,
+    "Maracuya": 4500,
+    "Banano Uraba": 2200,
+    "Papaya Maradol": 3000,
+    "Piña Oro Miel": 3500,
+    "Banano Criollo": 2500
 }
 
 # --- TÍTULO ---
