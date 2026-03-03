@@ -110,9 +110,9 @@ if os.path.exists(archivo_db):
     # --------------------------------
     
    st.subheader("📊 Historial General de Registros")
-    df_limpio = df_ver.copy()
-    columnas_num = ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]
-   for col in columnas_num:
+     df_limpio = df_ver.copy()
+     columnas_num = ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]
+    for col in columnas_num:
         df_limpio[col] = df_limpio[col].apply(lambda x: f"$ {x:,.0f}")
     st.dataframe(df_limpio, use_container_width=True)
     
