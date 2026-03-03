@@ -100,7 +100,7 @@ if boton:
 # --- 3. HISTORIAL Y BUSCADOR ---
 st.divider()
 if os.path.exists(archivo_db):
-   df_ver = pd.read_excel(archivo_db)
+  df_ver = pd.read_excel(archivo_db)
     
     # --- RESCATE DE DATOS ANTIGUOS ---
     if 'Fecha' not in df_ver.columns:
