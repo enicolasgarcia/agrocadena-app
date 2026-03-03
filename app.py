@@ -41,15 +41,20 @@ with st.form("registro_finca"):
         costo_total = st.number_input("Costo Total de Producción ($):", min_value=0, step=10000)
         col_cant, col_unid = st.columns([2, 1])
         cantidad = col_cant.number_input("Cantidad Cosechada:", min_value=0.1)
-        unidad = col_unid.selectbox("Unidad:", ["Kilos", "Bultos", "Toneladas"])
+        unidad = col_unid.selectbox("Unidad:", ["Kilos", "Bultos", "Toneladas", "Libras", "Quintales"])
 
     boton = st.form_submit_button("🚀 Calcular y Guardar")
 
 if boton:
-    # Conversión a Kilos (Base estándar)
     cantidad_kg = cantidad
-    if unidad == "Bultos": cantidad_kg = cantidad * 50
-    if unidad == "Toneladas": cantidad_kg = cantidad * 1000
+if unidad == "Bultos":
+    cantidad_kg = cantidad * 50
+elif unidad == "Quintales":
+    cantidad_kg = cantidad * 50
+elif unidad == "Libras":
+    cantidad_kg = cantidad / 2
+elif unidad == "Toneladas":
+    cantidad_kg = cantidad * 1000
     
     precio_seguro = costo_total / cantidad_kg
     
