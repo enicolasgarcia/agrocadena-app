@@ -112,7 +112,7 @@ if os.path.exists(archivo_db):
    st.subheader("📊 Historial General de Registros")
     
     # Esta configuración hace que los números grandes sean fáciles de leer
-    st.dataframe(
+   st.dataframe(
         df_ver, 
         use_container_width=True,
         column_config={
