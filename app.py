@@ -119,7 +119,7 @@ config_tabla = {
         "Producción": st.column_config.NumberColumn("Producción", format="%d Kg")
     }
     
-    st.dataframe(df_ver, use_container_width=True, column_config=config_tabla)
+st.dataframe(df_ver, use_container_width=True, column_config=config_tabla)
     
   # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
 st.subheader("🔍 Consultar Reporte Detallado")
