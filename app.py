@@ -112,7 +112,7 @@ if os.path.exists(archivo_db):
 st.subheader("📊 Historial General de Registros")
     
     # Configuración de tabla simplificada
-    config_tabla = {
+config_tabla = {
         "Inversión": st.column_config.NumberColumn("Inversión", format="$ %,d"),
         "Costo_Total": st.column_config.NumberColumn("Costo Total", format="$ %,d"),
         "Precio_Seguro_x_Kg": st.column_config.NumberColumn("Costo x Kg", format="$ %,.0f"),
