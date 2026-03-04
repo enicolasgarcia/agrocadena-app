@@ -40,7 +40,7 @@ precios_market = {
 }
 
 # --- TÍTULO ---
-st.title("🚜 Sistema de Gestión y Eficiencia Agrícola")
+st.title("🚜 Kunsamui")
 st.markdown("Registre sus costos y compare su rendimiento histórico.")
 
 # --- 1. FORMULARIO DE REGISTRO ---
