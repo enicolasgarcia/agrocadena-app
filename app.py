@@ -4,7 +4,7 @@ import os
 import datetime
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Asesor Agrícola Pro", layout="wide")
+st.set_page_config(page_title="Diversidad", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 def formato_cop(valor):
