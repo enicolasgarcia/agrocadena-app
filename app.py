@@ -40,7 +40,7 @@ precios_market = {
 }
 
 # --- TÍTULO ---
-st.title("🚜 Kunsamui")
+st.title("🚜 Diversidad")
 st.markdown("Registre sus costos y compare su rendimiento histórico.")
 
 # --- 1. FORMULARIO DE REGISTRO ---
