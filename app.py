@@ -14,13 +14,13 @@ archivo_db = "fincas_registradas.xlsx"
 
 # Diccionario de precios de referencia (Corabastos aproximado)
 precios_market = {
-    "Papa Sabanera": 7500,
+    "Papa Sabanera": 2200,
     "Frijol Verde": 4500,
-    "Aguacate Hass": 8500,
-    "Cebolla Larga": 3200,
-    "Tomate Chonto": 3800,
+    "Aguacate Hass": 6000,
+    "Cebolla Larga": 4400,
+    "Tomate Chonto": 6000,
     "Cafe": 15000,
-    "Fresa": 6000,
+    "Fresa": 8000,
     "Uchuva": 7000,
     "Arveja Verde": 4800,
     "Habichuela": 4800,
@@ -36,7 +36,8 @@ precios_market = {
     "Banano Uraba": 2200,
     "Papaya Maradol": 3000,
     "Piña Oro Miel": 3500,
-    "Banano Criollo": 2500
+    "Banano Criollo": 2500,
+    "mazorca": 1800
 }
 
 # --- TÍTULO ---
