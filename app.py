@@ -4,7 +4,7 @@ import os
 import datetime
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Asesor Agricola", layout="wide")
+st.set_page_config(page_title="App Agricola", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 def formato_cop(valor):
@@ -40,7 +40,7 @@ precios_market = {
 }
 
 # --- TÍTULO ---
-st.title("🚜 Asesor Agricola")
+st.title("🚜 App Agricola")
 st.markdown("Registre sus costos y compare su rendimiento histórico.")
 
 # --- 1. FORMULARIO DE REGISTRO ---
