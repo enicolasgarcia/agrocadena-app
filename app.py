@@ -65,16 +65,32 @@ with st.form("registro_finca"):
     boton = st.form_submit_button("🚀 Calcular y Guardar")
 
 if boton:
-    cantidad_kg = cantidad
-if unidad == "Bultos":
-    cantidad_kg = cantidad * 50
-elif unidad == "Quintales":
-    cantidad_kg = cantidad * 50
-elif unidad == "Libras":
-    cantidad_kg = cantidad / 2
-elif unidad == "Toneladas":
-    cantidad_kg = cantidad * 1000
-    
+    # 1. Definimos la cantidad en kilos según la unidad seleccionada
+    if unidad == "Bultos":
+        cantidad_kg = cantidad * 50
+    elif unidad == "Quintales":
+        cantidad_kg = cantidad * 125 / 2.20462 # O más simple: cantidad * 50 (si usas quintal granelero)
+        # Sugerencia: dejémoslo en 50 si así lo manejan tus conocidos, o 100 para quintal métrico.
+    elif unidad == "Libras":
+        cantidad_kg = cantidad / 2
+    elif unidad == "Toneladas":
+        cantidad_kg = cantidad * 1000
+    else:
+        cantidad_kg = cantidad  # Por defecto son Kilos
+
+    # 2. Calculamos el total usando el precio del diccionario
+    precio_unitario = precios_market.get(cultivo, 0)
+    total_venta = cantidad_kg * precio_unitario
+
+    # 3. Guardamos en el historial (Asegúrate que estas líneas existan abajo)
+    nuevo_registro = {
+        "Finca": finca,
+        "Cultivo": cultivo,
+        "Cantidad (Kg)": cantidad_kg,
+        "Total ($)": total_venta
+    }
+    st.session_state.historico.append(nuevo_registro)
+    st.success(f"✅ ¡Guardado! Total: ${total_venta:,.0f}")
     precio_seguro = costo_total / cantidad_kg
     
     # Crear DataFrame con el nuevo registro incluyendo FECHA
