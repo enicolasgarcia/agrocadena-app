@@ -115,7 +115,54 @@ if os.path.exists(archivo_db):
         else:
             st.info("Tus costos se mantienen en el promedio normal de producción.")
 
-    # --- 3. TABLA HISTÓRICA ---
-    st.divider()
-    st.subheader("📝 Historial de Registros")
-    st.dataframe(df_analisis.sort_values(by="Fecha", ascending=False), use_container_width=True)
+   # --- 3. HISTORIAL Y BUSCADOR ---
+st.divider()
+if os.path.exists(archivo_db):
+    df_ver = pd.read_excel(archivo_db)
+    
+    st.subheader("📝 Historial General de Registros")
+    
+    # --- LIMPIEZA DE DATOS PARA EVITAR EL ERROR ---
+    df_limpio = df_ver.copy()
+    
+    # Si la columna 'Fecha' no existe, la creamos con la fecha de hoy para que no de error
+    if "Fecha" not in df_limpio.columns:
+        df_limpio["Fecha"] = datetime.date.today().strftime("%Y-%m-%d")
+    
+    # Ordenar de forma segura (si falla el orden, muestra la tabla normal)
+    try:
+        df_limpio = df_limpio.sort_values(by="Fecha", ascending=False)
+    except:
+        pass 
+
+    # Formatear columnas de dinero para que se vean bonitas
+    cols_dinero = ["Costo_Total", "Precio_Costo_Kg", "Precio_Seguro_x_Kg", "Venta_Estimada"]
+    for col in cols_dinero:
+        if col in df_limpio.columns:
+            df_limpio[col] = df_limpio[col].apply(lambda x: f"$ {x:,.0f}" if pd.notnull(x) else "$ 0")
+
+    st.dataframe(df_limpio, use_container_width=True)
+    
+    # --- 4. CONSULTAR REPORTE POR FINCA ---
+    st.subheader("🔍 Consultar Reporte Detallado")
+    lista_fincas = df_ver["Finca"].unique()
+    finca_elegida = st.selectbox("1. Seleccione una finca:", lista_fincas)
+
+    if finca_elegida:
+        # Filtramos cultivos que existen en esa finca
+        df_finca = df_ver[df_ver["Finca"] == finca_elegida]
+        cultivos_finca = df_finca["Cultivo"].unique()
+        cultivo_elegido = st.selectbox("2. Seleccione el cultivo:", cultivos_finca)
+        
+        if cultivo_elegido:
+            datos_esp = df_finca[df_finca["Cultivo"] == cultivo_elegido]
+            # Tomar el último registro disponible
+            ultima = datos_esp.iloc[-1]
+            
+            # Determinar qué nombre de columna de costo usar
+            val_costo = ultima.get("Precio_Costo_Kg", ultima.get("Precio_Seguro_x_Kg", 0))
+            
+            st.info(f"Análisis para **{cultivo_elegido}** en **{finca_elegida}**")
+            st.write(f"💰 Último costo por Kg registrado: **{formato_cop(val_costo)}**")
+else:
+    st.info("Aún no hay datos registrados. Use el formulario de arriba para empezar.")
