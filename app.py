@@ -115,54 +115,77 @@ if os.path.exists(archivo_db):
         else:
             st.info("Tus costos se mantienen en el promedio normal de producción.")
 
-   # --- 3. HISTORIAL Y BUSCADOR ---
+# --- 3. HISTORIAL GENERAL (PRIMERO) ---
 st.divider()
 if os.path.exists(archivo_db):
     df_ver = pd.read_excel(archivo_db)
     
-    st.subheader("📝 Historial General de Registros")
-    
-    # --- LIMPIEZA DE DATOS PARA EVITAR EL ERROR ---
+    st.subheader("📝 1. Historial General de Registros")
     df_limpio = df_ver.copy()
     
-    # Si la columna 'Fecha' no existe, la creamos con la fecha de hoy para que no de error
+    # Asegurar que existan las columnas necesarias para no dar error
     if "Fecha" not in df_limpio.columns:
         df_limpio["Fecha"] = datetime.date.today().strftime("%Y-%m-%d")
     
-    # Ordenar de forma segura (si falla el orden, muestra la tabla normal)
+    # Ordenar por fecha (más reciente arriba)
     try:
         df_limpio = df_limpio.sort_values(by="Fecha", ascending=False)
     except:
-        pass 
+        pass
 
-    # Formatear columnas de dinero para que se vean bonitas
-    cols_dinero = ["Costo_Total", "Precio_Costo_Kg", "Precio_Seguro_x_Kg", "Venta_Estimada"]
-    for col in cols_dinero:
+    # Formatear visualmente los precios
+    cols_plata = ["Costo_Total", "Precio_Costo_Kg", "Precio_Seguro_x_Kg", "Venta_Estimada"]
+    for col in cols_plata:
         if col in df_limpio.columns:
             df_limpio[col] = df_limpio[col].apply(lambda x: f"$ {x:,.0f}" if pd.notnull(x) else "$ 0")
 
     st.dataframe(df_limpio, use_container_width=True)
+
+    # --- 4. CONSULTA DETALLADA (SEGUNDO) ---
+    st.divider()
+    st.subheader("🔍 2. Consulta de Reporte Detallado")
     
-    # --- 4. CONSULTAR REPORTE POR FINCA ---
-    st.subheader("🔍 Consultar Reporte Detallado")
+    col_sel1, col_sel2 = st.columns(2)
     lista_fincas = df_ver["Finca"].unique()
-    finca_elegida = st.selectbox("1. Seleccione una finca:", lista_fincas)
+    finca_elegida = col_sel1.selectbox("Seleccione una finca:", lista_fincas)
 
     if finca_elegida:
-        # Filtramos cultivos que existen en esa finca
-        df_finca = df_ver[df_ver["Finca"] == finca_elegida]
-        cultivos_finca = df_finca["Cultivo"].unique()
-        cultivo_elegido = st.selectbox("2. Seleccione el cultivo:", cultivos_finca)
+        cultivos_finca = df_ver[df_ver["Finca"] == finca_elegida]["Cultivo"].unique()
+        cultivo_elegido = col_sel2.selectbox("Seleccione el cultivo:", cultivos_finca)
         
         if cultivo_elegido:
-            datos_esp = df_finca[df_finca["Cultivo"] == cultivo_elegido]
-            # Tomar el último registro disponible
+            # Filtrar datos específicos
+            datos_esp = df_ver[(df_ver["Finca"] == finca_elegida) & (df_ver["Cultivo"] == cultivo_elegido)]
             ultima = datos_esp.iloc[-1]
             
-            # Determinar qué nombre de columna de costo usar
-            val_costo = ultima.get("Precio_Costo_Kg", ultima.get("Precio_Seguro_x_Kg", 0))
+            # --- 5. ANÁLISIS DE EFICIENCIA (TERCERO) ---
+            st.markdown(f"### 📊 3. Análisis de Eficiencia: {cultivo_elegido}")
             
-            st.info(f"Análisis para **{cultivo_elegido}** en **{finca_elegida}**")
-            st.write(f"💰 Último costo por Kg registrado: **{formato_cop(val_costo)}**")
+            # Obtener costo actual y promedio histórico del mismo cultivo en todas las fincas
+            col_costo = "Precio_Costo_Kg" if "Precio_Costo_Kg" in df_ver.columns else "Precio_Seguro_x_Kg"
+            costo_actual = ultima.get(col_costo, 0)
+            promedio_historico = df_ver[df_ver["Cultivo"] == cultivo_elegido][col_costo].mean()
+
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Costo Actual / Kg", formato_cop(costo_actual))
+            m2.metric("Promedio Histórico", formato_cop(promedio_historico))
+            
+            if promedio_historico > 0:
+                dif_pct = ((costo_actual - promedio_historico) / promedio_historico) * 100
+                m3.metric("Diferencia", f"{dif_pct:+.1f}%", delta=f"{dif_pct:+.1f}%", delta_color="inverse")
+                
+                # --- 6. DIAGNÓSTICO DEL ASESOR (ÚLTIMO) ---
+                st.markdown("---")
+                st.subheader("💡 4. Diagnóstico del Asesor Virtual")
+                
+                if dif_pct > 10:
+                    st.error(f"⚠️ **Atención:** En **{finca_elegida}**, el costo de la **{cultivo_elegido}** subió un {dif_pct:.1f}% frente a tu promedio. Revisa posibles fugas de dinero en insumos.")
+                elif dif_pct < -10:
+                    st.success(f"🌟 **¡Gran trabajo!** Estás produciendo **{cultivo_elegido}** de forma muy eficiente en esta cosecha. ¡Sigue así!")
+                else:
+                    st.info(f"✅ Los costos de **{cultivo_elegido}** están dentro del rango normal esperado.")
+            else:
+                st.warning("No hay suficientes datos históricos para comparar este cultivo.")
+
 else:
-    st.info("Aún no hay datos registrados. Use el formulario de arriba para empezar.")
+    st.info("👋 ¡Bienvenido! Aún no hay datos. Registra tu primera cosecha arriba para ver el análisis.")
