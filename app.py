@@ -45,19 +45,24 @@ with st.form("registro_finca"):
     
     boton = st.form_submit_button("🚀 Calcular y Guardar")
 
-# --- LÓGICA DE PROCESAMIENTO (SOLO GUARDA, NO MUESTRA ANÁLISIS AQUÍ) ---
+# --- LÓGICA DE PROCESAMIENTO ---
 if boton:
+    # 1. Conversión de unidades a KG (Definimos la variable aquí primero)
     factores = {"Bultos": 50, "Toneladas": 1000, "Libras": 0.5, "Kilos": 1}
     cantidad_kg = cantidad * factores.get(unidad, 1)
     
+    # 2. Cálculo de precios
     precio_ref = precios_market.get(cultivo_sel, 0)
     ingreso_est = cantidad_kg * precio_ref
+    
+    # Cálculo seguro del costo por kilo
     if cantidad_kg > 0:
         costo_kg = costo_total / cantidad_kg
-else:
-    costo_kg = 0
-    st.warning("⚠️ La cantidad es 0, no se puede calcular el costo por kilo.")
-    
+    else:
+        costo_kg = 0
+        st.warning("⚠️ La cantidad es 0, el costo se registró como $0.")
+
+    # 3. Crear el nuevo registro (Ahora cantidad_kg existe sí o sí)
     nuevo_dato = pd.DataFrame({
         "Fecha": [fecha_registro.strftime("%Y-%m-%d")],
         "Finca": [finca],
@@ -68,6 +73,7 @@ else:
         "Venta_Estimada": [ingreso_est]
     })
     
+    # 4. Guardar en Excel
     if os.path.exists(archivo_db):
         df_old = pd.read_excel(archivo_db)
         df_final = pd.concat([df_old, nuevo_dato], ignore_index=True)
@@ -75,7 +81,7 @@ else:
         df_final = nuevo_dato
     
     df_final.to_excel(archivo_db, index=False)
-    st.success(f"✅ Registro guardado con éxito.")
+    st.success(f"✅ ¡Registro de '{finca}' guardado con éxito!")
 
 # --- 2. HISTORIAL GENERAL (AHORA DE PRIMERAS) ---
 if os.path.exists(archivo_db):
