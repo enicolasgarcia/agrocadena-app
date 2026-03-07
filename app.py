@@ -53,7 +53,7 @@ if boton:
     precio_ref = precios_market.get(cultivo_sel, 0)
     ingreso_est = cantidad_kg * precio_ref
     if cantidad_kg > 0:
-    costo_kg = costo_total / cantidad_kg
+        costo_kg = costo_total / cantidad_kg
 else:
     costo_kg = 0
     st.warning("⚠️ La cantidad es 0, no se puede calcular el costo por kilo.")
