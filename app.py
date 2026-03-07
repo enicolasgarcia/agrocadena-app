@@ -45,9 +45,8 @@ with st.form("registro_finca"):
     
     boton = st.form_submit_button("🚀 Calcular y Guardar")
 
-# --- LÓGICA DE PROCESAMIENTO ---
+# --- LÓGICA DE PROCESAMIENTO (SOLO GUARDA, NO MUESTRA ANÁLISIS AQUÍ) ---
 if boton:
-    # Conversión
     factores = {"Bultos": 50, "Toneladas": 1000, "Libras": 0.5, "Kilos": 1}
     cantidad_kg = cantidad * factores.get(unidad, 1)
     
@@ -72,68 +71,23 @@ if boton:
         df_final = nuevo_dato
     
     df_final.to_excel(archivo_db, index=False)
-    st.success(f"✅ Guardado. Costo por Kg: {formato_cop(costo_kg)}")
+    st.success(f"✅ Registro guardado con éxito.")
 
-# --- 2. ANÁLISIS Y MÉTRICAS ---
-if os.path.exists(archivo_db):
-    df_analisis = pd.read_excel(archivo_db)
-    st.divider()
-    st.subheader("📊 Análisis de Eficiencia")
-    
-    # Seleccionar último registro
-    ultimo = df_analisis.iloc[-1]
-    cultivo_actual = ultimo["Cultivo"]
-    
-    # --- ARREGLO PARA EL ERROR DE COLUMNA ---
-    # Intentamos buscar el costo con el nombre nuevo o el viejo
-    if "Precio_Costo_Kg" in ultimo:
-        costo_actual = ultimo["Precio_Costo_Kg"]
-    elif "Precio_Seguro_x_Kg" in ultimo:
-        costo_actual = ultimo["Precio_Seguro_x_Kg"]
-    else:
-        costo_actual = 0
-    # ----------------------------------------
-
-    # Buscar el promedio en la columna que exista
-    col_costo = "Precio_Costo_Kg" if "Precio_Costo_Kg" in df_analisis.columns else "Precio_Seguro_x_Kg"
-    promedio_cultivo = df_analisis[df_analisis["Cultivo"] == cultivo_actual][col_costo].mean()
-    
-    col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric("Tu Costo actual / Kg", formato_cop(costo_actual))
-    col_m2.metric("Promedio Histórico", formato_cop(promedio_cultivo))
-    
-    if promedio_cultivo > 0:
-        dif_pct = ((costo_actual - promedio_cultivo) / promedio_cultivo) * 100
-        col_m3.metric("Diferencia", f"{dif_pct:+.1f}%", delta=f"{dif_pct:+.1f}%", delta_color="inverse")
-        
-        # --- ASESOR VIRTUAL ---
-        st.markdown("### 💡 Diagnóstico del Asesor")
-        if dif_pct > 10:
-            st.error(f"Tus costos de **{cultivo_actual}** están por encima del promedio. Revisa si hubo aumento en precio de insumos o fletes.")
-        elif dif_pct < -10:
-            st.success(f"¡Excelente! Estás produciendo **{cultivo_actual}** de forma más eficiente que en cosechas anteriores.")
-        else:
-            st.info("Tus costos se mantienen en el promedio normal de producción.")
-
-# --- 3. HISTORIAL GENERAL (PRIMERO) ---
-st.divider()
+# --- 2. HISTORIAL GENERAL (AHORA DE PRIMERAS) ---
 if os.path.exists(archivo_db):
     df_ver = pd.read_excel(archivo_db)
-    
+    st.divider()
     st.subheader("📝 1. Historial General de Registros")
-    df_limpio = df_ver.copy()
     
-    # Asegurar que existan las columnas necesarias para no dar error
+    df_limpio = df_ver.copy()
     if "Fecha" not in df_limpio.columns:
         df_limpio["Fecha"] = datetime.date.today().strftime("%Y-%m-%d")
     
-    # Ordenar por fecha (más reciente arriba)
     try:
         df_limpio = df_limpio.sort_values(by="Fecha", ascending=False)
     except:
         pass
 
-    # Formatear visualmente los precios
     cols_plata = ["Costo_Total", "Precio_Costo_Kg", "Precio_Seguro_x_Kg", "Venta_Estimada"]
     for col in cols_plata:
         if col in df_limpio.columns:
@@ -141,27 +95,25 @@ if os.path.exists(archivo_db):
 
     st.dataframe(df_limpio, use_container_width=True)
 
-    # --- 4. CONSULTA DETALLADA (SEGUNDO) ---
+    # --- 3. CONSULTA DETALLADA (SEGUNDO) ---
     st.divider()
     st.subheader("🔍 2. Consulta de Reporte Detallado")
     
     col_sel1, col_sel2 = st.columns(2)
     lista_fincas = df_ver["Finca"].unique()
-    finca_elegida = col_sel1.selectbox("Seleccione una finca:", lista_fincas)
+    finca_elegida = col_sel1.selectbox("Seleccione una finca para analizar:", lista_fincas)
 
     if finca_elegida:
         cultivos_finca = df_ver[df_ver["Finca"] == finca_elegida]["Cultivo"].unique()
         cultivo_elegido = col_sel2.selectbox("Seleccione el cultivo:", cultivos_finca)
         
         if cultivo_elegido:
-            # Filtrar datos específicos
             datos_esp = df_ver[(df_ver["Finca"] == finca_elegida) & (df_ver["Cultivo"] == cultivo_elegido)]
             ultima = datos_esp.iloc[-1]
             
-            # --- 5. ANÁLISIS DE EFICIENCIA (TERCERO) ---
+            # --- 4. ANÁLISIS DE EFICIENCIA (TERCERO) ---
             st.markdown(f"### 📊 3. Análisis de Eficiencia: {cultivo_elegido}")
             
-            # Obtener costo actual y promedio histórico del mismo cultivo en todas las fincas
             col_costo = "Precio_Costo_Kg" if "Precio_Costo_Kg" in df_ver.columns else "Precio_Seguro_x_Kg"
             costo_actual = ultima.get(col_costo, 0)
             promedio_historico = df_ver[df_ver["Cultivo"] == cultivo_elegido][col_costo].mean()
@@ -174,18 +126,15 @@ if os.path.exists(archivo_db):
                 dif_pct = ((costo_actual - promedio_historico) / promedio_historico) * 100
                 m3.metric("Diferencia", f"{dif_pct:+.1f}%", delta=f"{dif_pct:+.1f}%", delta_color="inverse")
                 
-                # --- 6. DIAGNÓSTICO DEL ASESOR (ÚLTIMO) ---
+                # --- 5. DIAGNÓSTICO DEL ASESOR (ÚLTIMO) ---
                 st.markdown("---")
                 st.subheader("💡 4. Diagnóstico del Asesor Virtual")
                 
                 if dif_pct > 10:
-                    st.error(f"⚠️ **Atención:** En **{finca_elegida}**, el costo de la **{cultivo_elegido}** subió un {dif_pct:.1f}% frente a tu promedio. Revisa posibles fugas de dinero en insumos.")
+                    st.error(f"⚠️ **Análisis:** En **{finca_elegida}**, tus costos de **{cultivo_elegido}** están un {dif_pct:.1f}% por encima del promedio. Se recomienda revisar el gasto en insumos.")
                 elif dif_pct < -10:
-                    st.success(f"🌟 **¡Gran trabajo!** Estás produciendo **{cultivo_elegido}** de forma muy eficiente en esta cosecha. ¡Sigue así!")
+                    st.success(f"🌟 **Análisis:** ¡Excelente! Tu producción de **{cultivo_elegido}** es muy eficiente ({abs(dif_pct):.1f}% mejor que el promedio).")
                 else:
-                    st.info(f"✅ Los costos de **{cultivo_elegido}** están dentro del rango normal esperado.")
-            else:
-                st.warning("No hay suficientes datos históricos para comparar este cultivo.")
-
+                    st.info(f"✅ **Análisis:** Los costos de **{cultivo_elegido}** se mantienen estables respecto al promedio.")
 else:
-    st.info("👋 ¡Bienvenido! Aún no hay datos. Registra tu primera cosecha arriba para ver el análisis.")
+    st.info("👋 Registre su primera cosecha arriba para activar el historial y el análisis.")
