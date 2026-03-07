@@ -52,7 +52,11 @@ if boton:
     
     precio_ref = precios_market.get(cultivo_sel, 0)
     ingreso_est = cantidad_kg * precio_ref
-    costo_kg = costo_total / cantidad_kg if cantidad_kg > 0 else 0
+    if cantidad_kg > 0:
+    costo_kg = costo_total / cantidad_kg
+else:
+    costo_kg = 0
+    st.warning("⚠️ La cantidad es 0, no se puede calcular el costo por kilo.")
     
     nuevo_dato = pd.DataFrame({
         "Fecha": [fecha_registro.strftime("%Y-%m-%d")],
