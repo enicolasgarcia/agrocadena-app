@@ -105,28 +105,35 @@ if os.path.exists(archivo_db):
 
     st.dataframe(df_limpio, use_container_width=True)
 
-    # --- 3. CONSULTA DETALLADA (SEGUNDO) ---
+    # --- 3. CONSULTA DETALLADA (VERSION MEJORADA) ---
     st.divider()
     st.subheader("🔍 2. Consulta de Reporte Detallado")
     
     col_sel1, col_sel2 = st.columns(2)
-    lista_fincas = df_ver["Finca"].unique()
+    # Limpiamos los nombres de las fincas de espacios extra para que el buscador sea exacto
+    lista_fincas = sorted(df_ver["Finca"].unique()) 
     finca_elegida = col_sel1.selectbox("Seleccione una finca para analizar:", lista_fincas)
 
     if finca_elegida:
-        cultivos_finca = df_ver[df_ver["Finca"] == finca_elegida]["Cultivo"].unique()
+        # Filtramos los datos de esa finca específica
+        df_finca = df_ver[df_ver["Finca"] == finca_elegida]
+        cultivos_finca = df_finca["Cultivo"].unique()
         cultivo_elegido = col_sel2.selectbox("Seleccione el cultivo:", cultivos_finca)
         
         if cultivo_elegido:
-            datos_esp = df_ver[(df_ver["Finca"] == finca_elegida) & (df_ver["Cultivo"] == cultivo_elegido)]
+            # Filtrar datos de la finca Y el cultivo
+            datos_esp = df_finca[df_finca["Cultivo"] == cultivo_elegido]
             ultima = datos_esp.iloc[-1]
             
-            # --- 4. ANÁLISIS DE EFICIENCIA (TERCERO) ---
+            # --- 4. ANÁLISIS DE EFICIENCIA ---
             st.markdown(f"### 📊 3. Análisis de Eficiencia: {cultivo_elegido}")
             
-            col_costo = "Precio_Costo_Kg" if "Precio_Costo_Kg" in df_ver.columns else "Precio_Seguro_x_Kg"
-            costo_actual = ultima.get(col_costo, 0)
-            promedio_historico = df_ver[df_ver["Cultivo"] == cultivo_elegido][col_costo].mean()
+            # Buscamos el costo en cualquier columna que exista (vieja o nueva)
+            costo_actual = ultima.get("Precio_Costo_Kg", ultima.get("Precio_Seguro_x_Kg", 0))
+            
+            # Calculamos el promedio histórico buscando en AMBAS columnas posibles
+            col_busqueda = "Precio_Costo_Kg" if "Precio_Costo_Kg" in df_ver.columns else "Precio_Seguro_x_Kg"
+            promedio_historico = df_ver[df_ver["Cultivo"] == cultivo_elegido][col_busqueda].mean()
 
             m1, m2, m3 = st.columns(3)
             m1.metric("Costo Actual / Kg", formato_cop(costo_actual))
@@ -136,15 +143,14 @@ if os.path.exists(archivo_db):
                 dif_pct = ((costo_actual - promedio_historico) / promedio_historico) * 100
                 m3.metric("Diferencia", f"{dif_pct:+.1f}%", delta=f"{dif_pct:+.1f}%", delta_color="inverse")
                 
-                # --- 5. DIAGNÓSTICO DEL ASESOR (ÚLTIMO) ---
+                # --- 5. DIAGNÓSTICO DEL ASESOR ---
                 st.markdown("---")
                 st.subheader("💡 4. Diagnóstico del Asesor Virtual")
-                
                 if dif_pct > 10:
-                    st.error(f"⚠️ **Análisis:** En **{finca_elegida}**, tus costos de **{cultivo_elegido}** están un {dif_pct:.1f}% por encima del promedio. Se recomienda revisar el gasto en insumos.")
+                    st.error(f"⚠️ Los costos de **{cultivo_elegido}** subieron. Revisa insumos.")
                 elif dif_pct < -10:
-                    st.success(f"🌟 **Análisis:** ¡Excelente! Tu producción de **{cultivo_elegido}** es muy eficiente ({abs(dif_pct):.1f}% mejor que el promedio).")
+                    st.success(f"🌟 ¡Excelente eficiencia en **{cultivo_elegido}**!")
                 else:
-                    st.info(f"✅ **Análisis:** Los costos de **{cultivo_elegido}** se mantienen estables respecto al promedio.")
+                    st.info(f"✅ Costos estables para **{cultivo_elegido}**.")
 else:
     st.info("👋 Registre su primera cosecha arriba para activar el historial y el análisis.")
