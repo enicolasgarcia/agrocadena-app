@@ -12,31 +12,16 @@ def formato_cop(valor):
 
 archivo_db = "fincas_registradas.xlsx"
 
-# Diccionario de precios de referencia (Corabastos aproximado)
+# Diccionario de precios de referencia actualizado
 precios_market = {
-    "Papa Sabanera": 2200,
-    "Frijol Verde": 4500,
-    "Aguacate Hass": 6000,
-    "Cebolla Larga": 4400,
-    "Tomate Chonto": 6000,
-    "Cafe": 15000,
-    "Fresa": 8000,
-    "Uchuva": 7000,
-    "Arveja Verde": 4800,
-    "Habichuela": 4800,
-    "Lulo": 5200,
-    "Zanahoria": 1800,
-    "Cebolla Cabezona Blanca": 2400,
-    "Tomate de Arbol": 3600,
-    "Papa Criolla": 2500,
-    "Pimenton": 3000,
-    "Mora de Castilla": 4000,
-    "Mango Tomy": 5000,
-    "Maracuya": 4500,
-    "Banano Uraba": 2200,
-    "Papaya Maradol": 3000,
-    "Piña Oro Miel": 3500,
-    "Banano Criollo": 2500,
+    "Papa Sabanera": 2200, "Frijol Verde": 4500, "Aguacate Hass": 6000,
+    "Cebolla Larga": 4400, "Tomate Chonto": 6000, "Cafe": 15000,
+    "Fresa": 8000, "Uchuva": 7000, "Arveja Verde": 4800,
+    "Habichuela": 4800, "Lulo": 5200, "Zanahoria": 1800,
+    "Cebolla Cabezona Blanca": 2400, "Tomate de Arbol": 3600,
+    "Papa Criolla": 2500, "Pimenton": 3000, "Mora de Castilla": 4000,
+    "Mango Tomy": 5000, "Maracuya": 4500, "Banano Uraba": 2200,
+    "Papaya Maradol": 3000, "Piña Oro Miel": 3500, "Banano Criollo": 2500,
     "mazorca": 1800
 }
 
@@ -51,9 +36,8 @@ with st.form("registro_finca"):
     col1, col2 = st.columns(2)
     
     with col1:
-        finca = st.text_input("Nombre de la Finca:")
+        finca = st.text_input("Nombre de la Finca:", value="Mi Finca")
         cultivo_sel = st.selectbox("Cultivo:", list(precios_market.keys()))
-        # NUEVO: Selector de Fecha
         fecha_registro = st.date_input("Fecha del Registro:", datetime.date.today())
         
     with col2:
@@ -64,62 +48,35 @@ with st.form("registro_finca"):
 
     boton = st.form_submit_button("🚀 Calcular y Guardar")
 
+# --- LÓGICA DE PROCESAMIENTO ---
 if boton:
-    try:
-        # Verificamos si la variable existe
-        precio_unitario = precios_market.get(cultivo, 0)
-        
-        # Conversión de unidades
-        if unidad == "Bultos":
-            cantidad_kg = cantidad * 50
-        elif unidad == "Toneladas":
-            cantidad_kg = cantidad * 1000
-        elif unidad == "Libras":
-            cantidad_kg = cantidad / 2
-        else:
-            cantidad_kg = cantidad
+    # 1. Conversión de unidades a KG
+    if unidad == "Bultos" or unidad == "Quintales":
+        cantidad_kg = cantidad * 50
+    elif unidad == "Toneladas":
+        cantidad_kg = cantidad * 1000
+    elif unidad == "Libras":
+        cantidad_kg = cantidad / 2
+    else:
+        cantidad_kg = cantidad
 
-        total_venta = cantidad_kg * precio_unitario
-
-        # Guardar en el historial
-        nuevo_registro = {
-            "Finca": finca, 
-            "Cultivo": cultivo, 
-            "Cantidad (Kg)": cantidad_kg, 
-            "Total ($)": total_venta
-        }
-        st.session_state.historico.append(nuevo_registro)
-        st.success(f"✅ ¡Guardado con éxito! Total: ${total_venta:,.0f}")
-        
-    except NameError:
-        st.error("Error: La variable 'cultivo' no está definida. Revisa que el st.selectbox esté antes del botón.")
-
-    # 2. Calculamos el total usando el precio del diccionario
-    precio_unitario = precios_market.get(cultivo, 0)
-    total_venta = cantidad_kg * precio_unitario
-
-    # 3. Guardamos en el historial (Asegúrate que estas líneas existan abajo)
-    nuevo_registro = {
-        "Finca": finca,
-        "Cultivo": cultivo,
-        "Cantidad (Kg)": cantidad_kg,
-        "Total ($)": total_venta
-    }
-    st.session_state.historico.append(nuevo_registro)
-    st.success(f"✅ ¡Guardado! Total: ${total_venta:,.0f}")
-    precio_seguro = costo_total / cantidad_kg
+    # 2. Cálculo de Venta (Ingreso estimado) y Precio Seguro (Costo real por kg)
+    precio_referencia = precios_market.get(cultivo_sel, 0)
+    total_venta_estimada = cantidad_kg * precio_referencia
+    precio_seguro = costo_total / cantidad_kg if cantidad_kg > 0 else 0
     
-    # Crear DataFrame con el nuevo registro incluyendo FECHA
+    # 3. Crear DataFrame para guardar
     nuevo_dato = pd.DataFrame({
         "Fecha": [fecha_registro.strftime("%Y-%m-%d")],
         "Finca": [finca],
         "Cultivo": [cultivo_sel],
         "Costo_Total": [costo_total],
         "Cantidad_Kg": [cantidad_kg],
-        "Precio_Seguro_x_Kg": [precio_seguro]
+        "Precio_Seguro_x_Kg": [precio_seguro],
+        "Venta_Estimada": [total_venta_estimada]
     })
     
-    # Guardar en Excel
+    # 4. Guardar en Excel
     if os.path.exists(archivo_db):
         df_existente = pd.read_excel(archivo_db)
         df_final = pd.concat([df_existente, nuevo_dato], ignore_index=True)
@@ -127,94 +84,49 @@ if boton:
         df_final = nuevo_dato
         
     df_final.to_excel(archivo_db, index=False)
-    st.success(f"✅ Registro de '{finca}' guardado con éxito.")
+    st.success(f"✅ ¡Registro exitoso! Venta estimada en Corabastos: {formato_cop(total_venta_estimada)}")
 
-    # --- 2. INDICADOR DE EFICIENCIA EN TIEMPO REAL ---
+    # --- INDICADOR DE EFICIENCIA ---
     st.divider()
     datos_cultivo = df_final[df_final["Cultivo"] == cultivo_sel]
     
     if len(datos_cultivo) > 1:
         promedio_sector = datos_cultivo["Precio_Seguro_x_Kg"].mean()
-        dif = ((precio_seguro - promedio_sector) / promedio_sector) * 100
+        dif = ((precio_seguro - promedio_sector) / promedio_sector) * 100 if promedio_sector > 0 else 0
         
         m1, m2, m3 = st.columns(3)
         m1.metric("Tu Costo / Kg", formato_cop(precio_seguro))
         m2.metric("Promedio Sector", formato_cop(promedio_sector))
         m3.metric("Diferencia", f"{dif:+.1f}%", delta=f"{dif:+.1f}%", delta_color="inverse")
-        
-        # Asesor Virtual
-        st.markdown("#### 💡 Recomendación del Asesor Virtual")
-        if dif > 20:
-            st.error(f"⚠️ **Alerta de Sobrecosto:** Tus costos están muy por encima del promedio. Revisa desperdicios.")
-        elif 0 < dif <= 20:
-            st.warning(f"🧐 **Oportunidad de Mejora:** Estás cerca del promedio, podrías optimizar.")
-        else:
-            st.success(f"🌟 **¡Excelente Gestión!** Eres más eficiente que el promedio.")
-    else:
-        st.info(f"💡 Eres el primer dato registrado para {cultivo_sel}. ¡Sigue así!")
 
 # --- 3. HISTORIAL Y BUSCADOR ---
 st.divider()
 if os.path.exists(archivo_db):
-   df_ver = pd.read_excel(archivo_db)
+    df_ver = pd.read_excel(archivo_db)
     
-    # --- RESCATE DE DATOS ANTIGUOS ---
-   if 'Fecha' not in df_ver.columns:
-        df_ver['Fecha'] = "2026-02-14"
-   else:
-        df_ver['Fecha'] = df_ver['Fecha'].fillna("2026-02-14")
-    # --------------------------------
+    st.subheader("📊 Historial General de Registros")
+    # Limpiamos visualmente la tabla para el usuario
+    df_mostrar = df_ver.copy()
+    if "Costo_Total" in df_mostrar.columns:
+        df_mostrar["Costo_Total"] = df_mostrar["Costo_Total"].apply(formato_cop)
+    if "Precio_Seguro_x_Kg" in df_mostrar.columns:
+        df_mostrar["Precio_Seguro_x_Kg"] = df_mostrar["Precio_Seguro_x_Kg"].apply(formato_cop)
     
-   st.subheader("📊 Historial General de Registros")
-   df_limpio = df_ver.copy()
-   columnas_num = ["Inversión", "Costo_Total", "Precio_Seguro_x_Kg"]
-   for col in columnas_num:
-        df_limpio[col] = df_limpio[col].apply(lambda x: f"$ {x:,.0f}")
-   st.dataframe(df_limpio, use_container_width=True)
+    st.dataframe(df_mostrar, use_container_width=True)
     
-  # --- 4. CONSULTAR REPORTE POR FINCA Y CULTIVO ---
-st.subheader("🔍 Consultar Reporte Detallado")
-lista_fincas = df_ver["Finca"].unique()
-finca_elegida = st.selectbox("1. Seleccione una finca:", lista_fincas)
+    # --- 4. CONSULTAR REPORTE POR FINCA ---
+    st.subheader("🔍 Consultar Reporte Detallado")
+    lista_fincas = df_ver["Finca"].unique()
+    finca_elegida = st.selectbox("1. Seleccione una finca:", lista_fincas)
 
-if finca_elegida:
-    # Filtramos cultivos que existen solo en esa finca
-    cultivos_finca = df_ver[df_ver["Finca"] == finca_elegida]["Cultivo"].unique()
-    cultivo_elegido = st.selectbox("2. Seleccione el cultivo a consultar:", cultivos_finca)
-    
-    if cultivo_elegido:
-        # Filtramos por Finca Y Cultivo, luego ordenamos por fecha
-        datos_especificos = df_ver[(df_ver["Finca"] == finca_elegida) & (df_ver["Cultivo"] == cultivo_elegido)].sort_values(by="Fecha")
-        ultima_finca = datos_especificos.iloc[-1]
+    if finca_elegida:
+        cultivos_finca = df_ver[df_ver["Finca"] == finca_elegida]["Cultivo"].unique()
+        cultivo_elegido = st.selectbox("2. Seleccione el cultivo:", cultivos_finca)
         
-        # Calculamos promedio general de ese cultivo para comparar
-        prom_actual = df_ver[df_ver["Cultivo"] == cultivo_elegido]["Precio_Seguro_x_Kg"].mean()
-        dif_h = ((ultima_finca["Precio_Seguro_x_Kg"] - prom_actual) / prom_actual) * 100
-        
-        st.info(f"📅 Mostrando último análisis de **{cultivo_elegido}** en **{finca_elegida}** (Fecha: {ultima_finca['Fecha']})")
-        
-        col_h1, col_h2 = st.columns(2)
-        col_h1.metric("Costo Registrado", formato_cop(ultima_finca["Precio_Seguro_x_Kg"]))
-        col_h2.metric("Estado vs Promedio", f"{dif_h:+.1f}%", delta=f"{dif_h:+.1f}%", delta_color="inverse")
-
-        st.markdown("---") 
-
-        # 3. Diagnóstico con renglones separados
-        if dif_h > 20:
-            st.error(f"### 🔴 Análisis de Sobrecosto")
-            st.markdown(
-                f"**📌 Posible causa:**\n"
-                f"Tus costos para {cultivo_elegido} ({formato_cop(ultima_finca['Precio_Seguro_x_Kg'])}) superan el promedio por un {dif_h:.1f}%. "
-                f"Esto puede ser por baja densidad de siembra o fletes costosos.\n\n"
-                f"**📌 Acción Sugerida:**\n"
-                f"Revisa los insumos aplicados específicamente a la {cultivo_elegido}. Evalúa si puedes optimizar la mano de obra en esta labor."
-            )
-        else:
-            st.success(f"### 🟢 Análisis de Eficiencia")
-            st.markdown(
-                f"**📌 Posible causa:**\n"
-                f"¡Excelente manejo! El costo de tu {cultivo_elegido} está un {abs(dif_h):.1f}% por debajo del promedio. "
-                f"Estás optimizando muy bien los recursos en esta finca.\n\n"
-                f"**📌 Acción Sugerida:**\n"
-                f"Revisa qué fertilizante o técnica usaste en este lote de {cultivo_elegido} para aplicarlo en tus otras fincas."
-            )
+        if cultivo_elegido:
+            datos_esp = df_ver[(df_ver["Finca"] == finca_elegida) & (df_ver["Cultivo"] == cultivo_elegido)]
+            ultima = datos_esp.iloc[-1]
+            st.info(f"Análisis para {cultivo_elegido} en {finca_elegida}")
+            st.write(f"Último costo por Kg: {formato_cop(ultima['Precio_Seguro_x_Kg'])}")
+else:
+    st.info("Aún no hay datos registrados. Use el formulario de arriba.")
