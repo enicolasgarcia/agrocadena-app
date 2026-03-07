@@ -65,18 +65,34 @@ with st.form("registro_finca"):
     boton = st.form_submit_button("🚀 Calcular y Guardar")
 
 if boton:
-    # 1. Definimos la cantidad en kilos según la unidad seleccionada
-    if unidad == "Bultos":
-        cantidad_kg = cantidad * 50
-    elif unidad == "Quintales":
-        cantidad_kg = cantidad * 125 / 2.20462 # O más simple: cantidad * 50 (si usas quintal granelero)
-        # Sugerencia: dejémoslo en 50 si así lo manejan tus conocidos, o 100 para quintal métrico.
-    elif unidad == "Libras":
-        cantidad_kg = cantidad / 2
-    elif unidad == "Toneladas":
-        cantidad_kg = cantidad * 1000
-    else:
-        cantidad_kg = cantidad  # Por defecto son Kilos
+    try:
+        # Verificamos si la variable existe
+        precio_unitario = precios_market.get(cultivo, 0)
+        
+        # Conversión de unidades
+        if unidad == "Bultos":
+            cantidad_kg = cantidad * 50
+        elif unidad == "Toneladas":
+            cantidad_kg = cantidad * 1000
+        elif unidad == "Libras":
+            cantidad_kg = cantidad / 2
+        else:
+            cantidad_kg = cantidad
+
+        total_venta = cantidad_kg * precio_unitario
+
+        # Guardar en el historial
+        nuevo_registro = {
+            "Finca": finca, 
+            "Cultivo": cultivo, 
+            "Cantidad (Kg)": cantidad_kg, 
+            "Total ($)": total_venta
+        }
+        st.session_state.historico.append(nuevo_registro)
+        st.success(f"✅ ¡Guardado con éxito! Total: ${total_venta:,.0f}")
+        
+    except NameError:
+        st.error("Error: La variable 'cultivo' no está definida. Revisa que el st.selectbox esté antes del botón.")
 
     # 2. Calculamos el total usando el precio del diccionario
     precio_unitario = precios_market.get(cultivo, 0)
