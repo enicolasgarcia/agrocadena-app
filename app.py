@@ -74,19 +74,29 @@ if boton:
     df_final.to_excel(archivo_db, index=False)
     st.success(f"✅ Guardado. Costo por Kg: {formato_cop(costo_kg)}")
 
-# --- 2. ANÁLISIS Y MÉTRICAS (AQUÍ ESTÁ LO QUE TE FALTABA) ---
+# --- 2. ANÁLISIS Y MÉTRICAS ---
 if os.path.exists(archivo_db):
     df_analisis = pd.read_excel(archivo_db)
     st.divider()
     st.subheader("📊 Análisis de Eficiencia")
     
-    # Seleccionar último registro para el análisis rápido
+    # Seleccionar último registro
     ultimo = df_analisis.iloc[-1]
     cultivo_actual = ultimo["Cultivo"]
-    costo_actual = ultimo["Precio_Costo_Kg"]
     
-    # Comparar con el promedio de ese mismo cultivo
-    promedio_cultivo = df_analisis[df_analisis["Cultivo"] == cultivo_actual]["Precio_Costo_Kg"].mean()
+    # --- ARREGLO PARA EL ERROR DE COLUMNA ---
+    # Intentamos buscar el costo con el nombre nuevo o el viejo
+    if "Precio_Costo_Kg" in ultimo:
+        costo_actual = ultimo["Precio_Costo_Kg"]
+    elif "Precio_Seguro_x_Kg" in ultimo:
+        costo_actual = ultimo["Precio_Seguro_x_Kg"]
+    else:
+        costo_actual = 0
+    # ----------------------------------------
+
+    # Buscar el promedio en la columna que exista
+    col_costo = "Precio_Costo_Kg" if "Precio_Costo_Kg" in df_analisis.columns else "Precio_Seguro_x_Kg"
+    promedio_cultivo = df_analisis[df_analisis["Cultivo"] == cultivo_actual][col_costo].mean()
     
     col_m1, col_m2, col_m3 = st.columns(3)
     col_m1.metric("Tu Costo actual / Kg", formato_cop(costo_actual))
