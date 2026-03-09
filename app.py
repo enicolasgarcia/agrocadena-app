@@ -11,7 +11,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Leer los datos existentes 
 df_existente = conn.read(
-    spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo/edit",
+    spreadsheet="11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo",
     worksheet="Sheet1",
     ttl=0
 )
