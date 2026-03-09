@@ -10,7 +10,7 @@ st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide")
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Leer los datos existentes 
-df_existente = conn.read(ttl=0)
+df_existente = conn.read(worksheet="Sheet1", ttl=0)
 
 def cargar_datos():
     try:
