@@ -72,15 +72,18 @@ if not df_existente.empty:
     st.subheader("📊 Análisis de Eficiencia")
     
     col_f, col_c = st.columns(2)
-    finca_sel = col_f.selectbox("Selecciona Finca para analizar", df["Finca"].unique())
-    cultivo_sel = col_c.selectbox("Selecciona Cultivo", df[df["Finca"] == finca_sel]["Cultivo"].unique())
+    finca_sel = col_f.selectbox("Selecciona Finca para analizar", df_existente["Finca"].unique())
+    cultivo_sel = col_c.selectbox(
+        "Selecciona Cultivo",
+        df[df["Finca"] == finca_sel]["Cultivo"].unique()
+    )
 
     # Filtrar datos para el análisis
-    datos_finca = df[(df["Finca"] == finca_sel) & (df["Cultivo"] == cultivo_sel)]
+    datos_finca = df_existente[(df_existente["Finca"] == finca_sel) & (df_existente["Cultivo"] == cultivo_sel)]
     precio_actual = datos_finca["Precio_Kg"].iloc[-1]
     
     # Calcular promedio histórico de ese cultivo en TODAS las fincas
-    promedio_historico = df[df["Cultivo"] == cultivo_sel]["Precio_Kg"].mean()
+    promedio_historico = df_existente[df_existente["Cultivo"] == cultivo_sel]["Precio_Kg"].mean()
     diferencia = ((precio_actual - promedio_historico) / promedio_historico) * 100
 
     # 3. Métricas
