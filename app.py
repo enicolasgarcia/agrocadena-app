@@ -44,12 +44,12 @@ with st.sidebar:
                 "Cantidad_Kg": cantidad_k,
                 "Precio_Kg": costo_t / cantidad_k
             }])
-            
-            df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
 
-            conn.update(
-                data=df_actualizado
-            )
+            df_actual = cargar_datos()
+                       
+            df_actualizado = pd.concat([df_actual, nueva_fila], ignore_index=True)
+
+            conn.update(data=df_actualizado) 
 
             st.success("¡Datos guardados!")
             st.balloons()
