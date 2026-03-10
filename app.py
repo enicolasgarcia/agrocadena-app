@@ -37,22 +37,22 @@ with st.sidebar:
         
         if st.form_submit_button("🚀 Guardar y Analizar"):
 
-    nueva_fila = pd.DataFrame([{
-        "Fecha": datetime.now().strftime("%Y-%m-%d"),
-        "Finca": finca_nombre,
-        "Cultivo": cultivo_tipo,
-        "Costo_Total": costo_t,
-        "Cantidad_Kg": cantidad_k,
-        "Precio_Kg": costo_t / cantidad_k
-    }])
+           nueva_fila = pd.DataFrame([{
+               "Fecha": datetime.now().strftime("%Y-%m-%d"),
+               "Finca": finca_nombre,
+               "Cultivo": cultivo_tipo,
+               "Costo_Total": costo_t,
+               "Cantidad_Kg": cantidad_k,
+               "Precio_Kg": costo_t / cantidad_k
+           }])
 
-    datos_actuales = conn.read(worksheet="Sheet1")
+           datos_actuales = conn.read(worksheet="Sheet1")
 
-    df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
+           df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
 
-    conn.update(
-        worksheet="Sheet1",
-        data=df_actualizado
+           conn.update(
+           worksheet="Sheet1",
+           data=df_actualizado
     )
 
     st.success("¡Datos guardados!")
