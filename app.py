@@ -49,8 +49,11 @@ with st.sidebar:
                        
             df_actualizado = pd.concat([df_actual, nueva_fila], ignore_index=True)
 
-            conn.update(data=df_actualizado) 
-
+            conn.update(
+                worksheet="Sheet1",
+                data=df_actualizado
+            )
+            
             st.success("¡Datos guardados!")
             st.balloons()
             st.rerun()
