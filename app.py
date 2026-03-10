@@ -4,18 +4,24 @@ import pandas as pd
 from datetime import datetime
 
 # Configuración de página
-st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide")
+st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide"
 
 # --- CONEXIÓN A GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def cargar_datos():
     try:
-        return conn.read()
+        return conn.read(worksheet="Sheet1", ttl=0)
     except:
         return pd.DataFrame(columns=["Fecha", "Finca", "Cultivo", "Costo_Total", "Cantidad_Kg", "Precio_Kg"])
 
-df = cargar_datos()
+df_existente = cargar_datos()
+
+if df_existente.empty:
+    st.info("Aún no tienes datos. Registra tu primera finca en el menú de la izquierda.")
+else:
+    st.write("### Registros Actuales")
+    st.dataframe(df_existente)
 
 st.title("🚜 Gestión Agrícola Permanente")
 st.markdown("Los datos se guardan automáticamente en tu Google Sheets.")
@@ -39,7 +45,7 @@ with st.sidebar:
                 "Precio_Kg": costo_t / cantidad_k
             }])
             
-            df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
+            df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
             conn.update(worksheet="Sheet1", data=df_actualizado)
             st.success("¡Datos guardados!")
             st.balloons()
