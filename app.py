@@ -46,7 +46,6 @@ with st.sidebar:
            }])
 
            datos_actuales = conn.read(worksheet="Sheet1")
-
            df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
            conn.update(
                spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo",
