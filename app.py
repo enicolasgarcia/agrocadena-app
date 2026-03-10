@@ -9,9 +9,6 @@ st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide")
 # --- CONEXIÓN A GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Leer los datos existentes 
-df_existente = conn.read(ttl=0)
-
 def cargar_datos():
     try:
         return conn.read()
