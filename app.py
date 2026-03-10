@@ -36,26 +36,28 @@ with st.sidebar:
         cantidad_k = st.number_input("Cantidad (Kg)", min_value=1)
         
         if st.form_submit_button("🚀 Guardar y Analizar"):
-            nueva_fila = pd.DataFrame([{
-                "Fecha": datetime.now().strftime("%Y-%m-%d"),
-                "Finca": finca_nombre,
-                "Cultivo": cultivo_tipo,
-                "Costo_Total": costo_t,
-                "Cantidad_Kg": cantidad_k,
-                "Precio_Kg": costo_t / cantidad_k
-            }])
 
-            df_actual = cargar_datos()
-                       
-            df_actualizado = pd.concat([df_actual, nueva_fila], ignore_index=True)
+    nueva_fila = pd.DataFrame([{
+        "Fecha": datetime.now().strftime("%Y-%m-%d"),
+        "Finca": finca_nombre,
+        "Cultivo": cultivo_tipo,
+        "Costo_Total": costo_t,
+        "Cantidad_Kg": cantidad_k,
+        "Precio_Kg": costo_t / cantidad_k
+    }])
 
-            conn.update(   
-                worksheet="Sheet1",
-                data=df_actualizado
-            )
-            st.success("¡Datos guardados!")
-            st.balloons()
-            st.rerun()
+    datos_actuales = conn.read(worksheet="Sheet1")
+
+    df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
+
+    conn.update(
+        worksheet="Sheet1",
+        data=df_actualizado
+    )
+
+    st.success("¡Datos guardados!")
+    st.balloons()
+    st.rerun()
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
