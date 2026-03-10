@@ -45,15 +45,15 @@ with st.sidebar:
                 "Precio_Kg": costo_t / cantidad_k
             }])
             
-            df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
-            conn.create(
-                spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo/edit",
-                worksheet="Sheet1",
-                data=df_actualizado
-            )
-            st.success("¡Datos guardados!")
-            st.balloons()
-            st.rerun()
+            df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
+
+conn.update(
+    data=df_actualizado
+)
+
+st.success("¡Datos guardados!")
+st.balloons()
+st.rerun()
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
