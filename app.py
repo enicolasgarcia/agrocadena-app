@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 
 # Configuración de página
-st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide"
+st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide")
 
 # --- CONEXIÓN A GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
