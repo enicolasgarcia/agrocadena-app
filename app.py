@@ -49,12 +49,10 @@ with st.sidebar:
                        
             df_actualizado = pd.concat([df_actual, nueva_fila], ignore_index=True)
 
-            conn.update(
-                spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo",
+            conn.update(   
                 worksheet="Sheet1",
                 data=df_actualizado
             )
-            
             st.success("¡Datos guardados!")
             st.balloons()
             st.rerun()
