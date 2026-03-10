@@ -43,24 +43,24 @@ with st.sidebar:
                "Costo_Total": costo_t,
                "Cantidad_Kg": cantidad_k,
                "Precio_Kg": costo_t / cantidad_k
-           }])
+            }])
 
-           datos_actuales = conn.read(
+            datos_actuales = conn.read(
                spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo",
                worksheet="Sheet1"
-           )
+            )
         
-           df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
+            df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
         
-           conn.update(
+            conn.update(
                spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo",
                worksheet="Sheet1",
                data=df_actualizado
-    )
+            )
 
-    st.success("¡Datos guardados!")
-    st.balloons()
-    st.rerun()
+            st.success("¡Datos guardados!")
+            st.balloons()
+            st.rerun()
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
