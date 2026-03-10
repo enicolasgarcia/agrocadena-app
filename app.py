@@ -52,10 +52,13 @@ with st.sidebar:
             st.rerun()
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
-if not df.empty:
+if not df_existente.empty:
+    st.write("### Registros Actuales")
+    st.dataframe(df_existente)
+    
     # 1. Historial
     st.subheader("📝 Historial de Producción")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df_existente, use_container_width=True)
 
     # 2. Análisis de Eficiencia
     st.divider()
