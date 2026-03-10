@@ -47,13 +47,13 @@ with st.sidebar:
             
             df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
 
-conn.update(
-    data=df_actualizado
-)
+            conn.update(
+                data=df_actualizado
+            )
 
-st.success("¡Datos guardados!")
-st.balloons()
-st.rerun()
+            st.success("¡Datos guardados!")
+            st.balloons()
+            st.rerun()
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
