@@ -36,8 +36,7 @@ with st.sidebar:
         cantidad_k = st.number_input("Cantidad (Kg)", min_value=1)
         
         if st.form_submit_button("🚀 Guardar y Analizar"):
-
-           nueva_fila = pd.DataFrame([{
+            nueva_fila = pd.DataFrame([{
                "Fecha": datetime.now().strftime("%Y-%m-%d"),
                "Finca": finca_nombre,
                "Cultivo": cultivo_tipo,
