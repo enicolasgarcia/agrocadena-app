@@ -34,29 +34,29 @@ with st.sidebar:
         cultivo_tipo = st.selectbox("Cultivo", ["Mango Tommy", "Aguacate", "Limón"])
         costo_t = st.number_input("Costo Total ($)", min_value=0)
         cantidad_k = st.number_input("Cantidad (Kg)", min_value=1)
-        
-        if st.form_submit_button("🚀 Guardar y Analizar"):
-            nueva_fila = pd.DataFrame([{
-               "Fecha": datetime.now().strftime("%Y-%m-%d"),
-               "Finca": finca_nombre,
-               "Cultivo": cultivo_tipo,
-               "Costo_Total": costo_t,
-               "Cantidad_Kg": cantidad_k,
-               "Precio_Kg": costo_t / cantidad_k
-            }])
 
-            datos_actuales = conn.read(worksheet="Sheet1")
-        
-            df_actualizado = pd.concat([datos_actuales, nueva_fila], ignore_index=True)
-        
-            conn.update(
-               worksheet="Sheet1",
-               data=df_actualizado
-            )
+if st.sidebar.button("🚀 Guardar y Analizar"):
+    if nombre_finca:
+        # 1. Crear la nueva fila
+        nueva_fila = pd.DataFrame([{
+            "Fecha": datetime.now().strftime("%Y-%m-%d"),
+            "Finca": nombre_finca,
+            "Cultivo": cultivo,
+            "Costo_Total": costo,
+            "Cantidad_Kg": cantidad,
+            "Precio_Kg": costo / cantidad if cantidad > 0 else 0
+        }])
 
-            st.success("¡Datos guardados!")
-            st.balloons()
-            st.rerun()
+        # 2. Combinar con lo existente
+        df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
+
+        # 3. EL CAMBIO CLAVE: Usar la URL en la conexión global
+        # Asegúrate de que esta línea esté ASÍ:
+        conn.update(data=df_actualizado) 
+        
+        st.sidebar.success("✅ ¡Datos guardados!")
+        st.balloons()
+        st.rerun()
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
