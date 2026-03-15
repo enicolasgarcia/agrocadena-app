@@ -39,7 +39,7 @@ with st.sidebar:
         # BOTÓN ESPECIAL PARA FORMULARIOS (Dentro del bloque con sangría)
         submit = st.form_submit_button("🚀 Guardar y Analizar")
 
-       if submit:
+        if submit:
             if finca_nombre:
                 # 1. Crear la nueva fila
                 nueva_fila = pd.DataFrame([{
