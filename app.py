@@ -1,109 +1,76 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+import os
 from datetime import datetime
 
-# Configuración de página
-st.set_page_config(page_title="Agrocadena Pro - Google Sheets", layout="wide")
+# 1. CONFIGURACIÓN INICIAL (Como en tu Jupyter)
+archivo_base = 'fincas_registradas.xlsx'
 
-# --- CONEXIÓN A GOOGLE SHEETS ---
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-def cargar_datos():
-    try:
-        return conn.read(worksheet="Sheet1", ttl=0)
-    except:
-        return pd.DataFrame(columns=["Fecha", "Finca", "Cultivo", "Costo_Total", "Cantidad_Kg", "Precio_Kg"])
-
-df_existente = cargar_datos()
-
-if df_existente.empty:
-    st.info("Aún no tienes datos. Registra tu primera finca en el menú de la izquierda.")
+# Intentamos cargar el archivo, si no existe, creamos el DataFrame vacío
+if os.path.exists(archivo_base):
+    df_existente = pd.read_excel(archivo_base)
 else:
-    st.write("### Registros Actuales")
-    st.dataframe(df_existente)
+    columnas = ['Nombre_Finca', 'Cultivo', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
+    df_existente = pd.DataFrame(columns=columnas)
 
-st.title("🚜 Gestión Agrícola Permanente")
-st.markdown("Los datos se guardan automáticamente en tu Google Sheets.")
+# --- INTERFAZ DE USUARIO ---
+st.title("🚜 Consultoría Agrocadena: Punto de Equilibrio")
 
-# --- FORMULARIO DE REGISTRO ---
 with st.sidebar:
     st.header("📝 Nuevo Registro")
     with st.form("registro_finca"):
-        # USAMOS ESTOS NOMBRES
-        finca_nombre = st.text_input("Nombre de la Finca")
-        cultivo_tipo = st.selectbox("Cultivo", ["Mango Tommy", "Aguacate", "Limón"])
-        costo_t = st.number_input("Costo Total ($)", min_value=0.0)
-        cantidad_k = st.number_input("Cantidad (Kg)", min_value=1.0)
-
-        # BOTÓN ESPECIAL PARA FORMULARIOS (Dentro del bloque con sangría)
-        submit = st.form_submit_button("🚀 Guardar y Analizar")
+        nombre = st.text_input("Nombre de la Finca")
+        cultivo = st.text_input("Cultivo (ej: Mango, Lulo)")
+        produccion = st.number_input("Producción esperada (Kg/Unidades)", min_value=1.0)
+        inv_inicial = st.number_input("Inversión Inicial ($)", min_value=0.0)
+        costo_mensual = st.number_input("Costo mensual operativo ($)", min_value=0.0)
+        meses = st.number_input("Meses que dura el ciclo", min_value=1.0)
+        
+        submit = st.form_submit_button("🚀 Calcular y Guardar")
 
         if submit:
-            if finca_nombre:
-                # 1. Crear la nueva fila
+            if nombre:
+                # LÓGICA DE TU JUPYTER
+                gasto_total = inv_inicial + (costo_mensual * meses)
+                precio_minimo = gasto_total / produccion
+                
+                # Crear nueva fila
                 nueva_fila = pd.DataFrame([{
-                    "Fecha": datetime.now().strftime("%Y-%m-%d"),
-                    "Finca": finca_nombre,
-                    "Cultivo": cultivo_tipo,
-                    "Costo_Total": costo_t,
-                    "Cantidad_Kg": cantidad_k,
-                    "Precio_Kg": costo_t / cantidad_k if cantidad_k > 0 else 0
+                    'Nombre_Finca': nombre,
+                    'Cultivo': cultivo,
+                    'Inversion_Inicial': inv_inicial,
+                    'Costo_Mensual': costo_mensual,
+                    'Meses': meses,
+                    'Costo_Total': gasto_total,
+                    'Precio_Minimo': precio_minimo
                 }])
 
-                # 2. Combinar con los datos anteriores
-                df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
-
-                # 3. GUARDAR EN TU PORTÁTIL (Archivo local)
-                # Esto creará un archivo llamado 'datos_produccion.xlsx' en tu carpeta
-                df_actualizado.to_excel("datos_produccion.xlsx", index=False)
+                # Combinar y guardar localmente
+                df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
+                df_final.to_excel(archivo_base, index=False)
                 
-                st.success("✅ ¡Datos guardados en datos_produccion.xlsx!")
+                st.success(f"✅ ¡{nombre} guardado exitosamente!")
                 st.balloons()
-                # st.rerun() # Opcional: recarga la app para ver los cambios
+                st.rerun() # Refresca para mostrar la tabla actualizada
             else:
-                st.warning("⚠️ Por favor, ingresa el nombre de la finca.")
+                st.error("⚠️ Por favor, ingresa el nombre de la finca.")
 
-# --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
-if not df_existente.empty:
-    st.write("### Registros Actuales")
-    st.dataframe(df_existente)
-    
-    # 1. Historial
-    st.subheader("📝 Historial de Producción")
-    st.dataframe(df_existente, use_container_width=True)
-
-    # 2. Análisis de Eficiencia
-    st.divider()
-    st.subheader("📊 Análisis de Eficiencia")
-    
-    col_f, col_c = st.columns(2)
-    finca_sel = col_f.selectbox("Selecciona Finca para analizar", df_existente["Finca"].unique())
-    cultivo_sel = col_c.selectbox(
-        "Selecciona Cultivo",
-        df[df["Finca"] == finca_sel]["Cultivo"].unique()
-    )
-
-    # Filtrar datos para el análisis
-    datos_finca = df_existente[(df_existente["Finca"] == finca_sel) & (df_existente["Cultivo"] == cultivo_sel)]
-    precio_actual = datos_finca["Precio_Kg"].iloc[-1]
-    
-    # Calcular promedio histórico de ese cultivo en TODAS las fincas
-    promedio_historico = df_existente[df_existente["Cultivo"] == cultivo_sel]["Precio_Kg"].mean()
-    diferencia = ((precio_actual - promedio_historico) / promedio_historico) * 100
-
-    # 3. Métricas
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Costo Actual ($/Kg)", f"${precio_actual:,.2f}")
-    m2.metric("Promedio Histórico", f"${promedio_historico:,.2f}")
-    m3.metric("Eficiencia", f"{diferencia:+.2f}%", delta_color="inverse")
-
-    # 4. Diagnóstico del Asesor
-    st.info("💡 **Diagnóstico del Asesor:**")
-    if diferencia <= 0:
-        st.success(f"¡Excelente! En {finca_sel}, el costo de {cultivo_sel} está un {abs(diferencia):.1f}% por DEBAJO del promedio. Vas por buen camino.")
-    else:
-        st.error(f"Atención: El costo en {finca_sel} es un {diferencia:.1f}% más ALTO que el promedio. Revisa insumos o mano de obra.")
-
+# --- MOSTRAR RESULTADOS EN PANTALLA PRINCIPAL ---
+st.subheader("📋 Historial de Fincas")
+# Mostramos los datos cargados o los nuevos
+if os.path.exists(archivo_base):
+    df_mostrar = pd.read_excel(archivo_base)
+    st.dataframe(df_mostrar)
 else:
-    st.info("Aún no tienes datos. Registra tu primera finca en el menú de la izquierda.")
+    st.info("Aún no hay fincas registradas.")
+
+# --- BOTÓN PARA DESCARGAR EL EXCEL A TU PC ---
+st.sidebar.markdown("---")
+if os.path.exists(archivo_base):
+    with open(archivo_base, "rb") as f:
+        st.sidebar.download_button(
+            label="📥 Descargar Excel a mi PC",
+            data=f,
+            file_name="fincas_registradas.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
