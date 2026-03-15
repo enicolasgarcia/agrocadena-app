@@ -30,33 +30,38 @@ st.markdown("Los datos se guardan automáticamente en tu Google Sheets.")
 with st.sidebar:
     st.header("📝 Nuevo Registro")
     with st.form("registro_finca"):
+        # USAMOS ESTOS NOMBRES
         finca_nombre = st.text_input("Nombre de la Finca")
         cultivo_tipo = st.selectbox("Cultivo", ["Mango Tommy", "Aguacate", "Limón"])
-        costo_t = st.number_input("Costo Total ($)", min_value=0)
-        cantidad_k = st.number_input("Cantidad (Kg)", min_value=1)
+        costo_t = st.number_input("Costo Total ($)", min_value=0.0)
+        cantidad_k = st.number_input("Cantidad (Kg)", min_value=1.0)
 
-if st.sidebar.button("🚀 Guardar y Analizar"):
-    if nombre_finca:
-        # 1. Crear la nueva fila
-        nueva_fila = pd.DataFrame([{
-            "Fecha": datetime.now().strftime("%Y-%m-%d"),
-            "Finca": nombre_finca,
-            "Cultivo": cultivo,
-            "Costo_Total": costo,
-            "Cantidad_Kg": cantidad,
-            "Precio_Kg": costo / cantidad if cantidad > 0 else 0
-        }])
+        # BOTÓN ESPECIAL PARA FORMULARIOS (Dentro del bloque con sangría)
+        submit = st.form_submit_button("🚀 Guardar y Analizar")
 
-        # 2. Combinar con lo existente
-        df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
+        if submit:
+            if finca_nombre:
+                # 1. Crear la nueva fila (Usando los nombres de arriba)
+                nueva_fila = pd.DataFrame([{
+                    "Fecha": datetime.now().strftime("%Y-%m-%d"),
+                    "Finca": finca_nombre,
+                    "Cultivo": cultivo_tipo,
+                    "Costo_Total": costo_t,
+                    "Cantidad_Kg": cantidad_k,
+                    "Precio_Kg": costo_t / cantidad_k if cantidad_k > 0 else 0
+                }])
 
-        # 3. EL CAMBIO CLAVE: Usar la URL en la conexión global
-        # Asegúrate de que esta línea esté ASÍ:
-        conn.update(data=df_actualizado) 
-        
-        st.sidebar.success("✅ ¡Datos guardados!")
-        st.balloons()
-        st.rerun()
+                # 2. Combinar
+                df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
+
+                # 3. Guardar
+                conn.update(worksheet="Sheet1", data=df_actualizado)
+                
+                st.success("✅ ¡Datos guardados!")
+                st.balloons()
+                st.rerun()
+            else:
+                st.warning("⚠️ Escribe el nombre de la finca.")
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
