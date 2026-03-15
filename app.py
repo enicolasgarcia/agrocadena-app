@@ -39,7 +39,7 @@ with st.sidebar:
         # BOTÓN ESPECIAL PARA FORMULARIOS (Dentro del bloque con sangría)
         submit = st.form_submit_button("🚀 Guardar y Analizar")
 
-        if submit:
+       if submit:
             if finca_nombre:
                 # 1. Crear la nueva fila
                 nueva_fila = pd.DataFrame([{
@@ -51,19 +51,16 @@ with st.sidebar:
                     "Precio_Kg": costo_t / cantidad_k if cantidad_k > 0 else 0
                 }])
 
-                # 2. Combinar con los datos cargados al inicio
+                # 2. Combinar con los datos anteriores
                 df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
 
-                # 3. Guardar (Forzando la URL para evitar el error de permisos)
-                conn.update(
-                    spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo/edit",
-                    worksheet="Sheet1",
-                    data=df_actualizado
-                )
+                # 3. GUARDAR EN TU PORTÁTIL (Archivo local)
+                # Esto creará un archivo llamado 'datos_produccion.xlsx' en tu carpeta
+                df_actualizado.to_excel("datos_produccion.xlsx", index=False)
                 
-                st.success("✅ ¡Datos guardados exitosamente!")
+                st.success("✅ ¡Datos guardados en datos_produccion.xlsx!")
                 st.balloons()
-                st.rerun()
+                # st.rerun() # Opcional: recarga la app para ver los cambios
             else:
                 st.warning("⚠️ Por favor, ingresa el nombre de la finca.")
 
