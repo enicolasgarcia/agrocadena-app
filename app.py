@@ -41,7 +41,7 @@ with st.sidebar:
 
         if submit:
             if finca_nombre:
-                # 1. Crear la nueva fila (Usando los nombres de arriba)
+                # 1. Crear la nueva fila
                 nueva_fila = pd.DataFrame([{
                     "Fecha": datetime.now().strftime("%Y-%m-%d"),
                     "Finca": finca_nombre,
@@ -51,17 +51,21 @@ with st.sidebar:
                     "Precio_Kg": costo_t / cantidad_k if cantidad_k > 0 else 0
                 }])
 
-                # 2. Combinar
+                # 2. Combinar con los datos cargados al inicio
                 df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
 
-                # 3. Guardar
-                conn.create(worksheet="Sheet1", data=df_actualizado)
+                # 3. Guardar (Forzando la URL para evitar el error de permisos)
+                conn.update(
+                    spreadsheet="https://docs.google.com/spreadsheets/d/11t6jtrumL1K2jw_qb9eDeX5QJ0xIAsK3UZyCISgQNxo/edit",
+                    worksheet="Sheet1",
+                    data=df_actualizado
+                )
                 
-                st.success("✅ ¡Datos guardados!")
+                st.success("✅ ¡Datos guardados exitosamente!")
                 st.balloons()
                 st.rerun()
             else:
-                st.warning("⚠️ Escribe el nombre de la finca.")
+                st.warning("⚠️ Por favor, ingresa el nombre de la finca.")
 
 # --- LÓGICA DE ANÁLISIS (Tu cerebro de la App) ---
 if not df_existente.empty:
