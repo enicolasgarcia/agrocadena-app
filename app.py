@@ -80,32 +80,42 @@ if os.path.exists(archivo_base):
 st.markdown("---")
 st.header("📊 Análisis de Eficiencia y Sectorial")
 
-# Usamos df_existente o df_mostrar (la que tengas definida arriba)
-df_analisis = df_existente 
-
-if not df_analisis.empty:
+# Usamos df_existente que es el que cargamos al principio
+if not df_existente.empty:
     # 1. MÉTRICAS GLOBALES
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Gasto Promedio", f"${df_analisis['Costo_Total'].mean():,.0f}")
+        st.metric("Gasto Promedio", f"${df_existente['Costo_Total'].mean():,.0f}")
     with col2:
-        st.metric("Precio Mínimo Promedio", f"${df_analisis['Precio_Minimo'].mean():,.0f}")
+        st.metric("Precio Mínimo Promedio", f"${df_existente['Precio_Minimo'].mean():,.0f}")
     with col3:
-        st.metric("Total Fincas", len(df_analisis))
+        st.metric("Total Fincas", len(df_existente))
 
     # 2. GRÁFICO DE COSTOS POR CULTIVO
-    st.subheader("📈 Inversión por Cultivo")
-    st.bar_chart(df_analisis.groupby('Cultivo')['Costo_Total'].sum())
+    st.subheader("📈 Inversión Total por Cultivo")
+    # Agrupamos los costos para ver cuál cultivo requiere más dinero
+    costos_por_cultivo = df_existente.groupby('Cultivo')['Costo_Total'].sum()
+    st.bar_chart(costos_por_cultivo)
 
     # 3. BUSCADOR
     st.subheader("🔍 Buscador de Historial")
-    busqueda = st.text_input("Filtrar por nombre o cultivo:")
+    busqueda = st.text_input("Filtrar por nombre de finca o tipo de cultivo:")
     if busqueda:
-        df_filtrado = df_analisis[df_analisis['Nombre_Finca'].str.contains(busqueda, case=False)]
+        df_filtrado = df_existente[
+            df_existente['Nombre_Finca'].str.contains(busqueda, case=False) | 
+            df_existente['Cultivo'].str.contains(busqueda, case=False)
+        ]
         st.dataframe(df_filtrado)
 else:
-    st.info("Registra datos para ver el análisis.")
+    st.info("💡 Registra tu primera finca en el menú de la izquierda para ver el análisis.")
 
-# --- BOTÓN DE DESCARGA (Esto ya lo tenías, déjalo al final) ---
+# --- BOTÓN PARA DESCARGAR EL EXCEL A TU PC (BLOQUE FINAL) ---
+st.sidebar.markdown("---")
 if os.path.exists(archivo_base):
-    # ... (tu código del botón de descarga)
+    with open(archivo_base, "rb") as f:
+        st.sidebar.download_button(
+            label="📥 Descargar Excel a mi PC",
+            data=f,
+            file_name="fincas_registradas.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
