@@ -64,18 +64,6 @@ if os.path.exists(archivo_base):
 else:
     st.info("Aún no hay fincas registradas.")
 
-# --- BOTÓN PARA DESCARGAR EL EXCEL A TU PC ---
-st.sidebar.markdown("---")
-if os.path.exists(archivo_base):
-    with open(archivo_base, "rb") as f:
-        st.sidebar.download_button(
-            label="📥 Descargar Excel a mi PC",
-            data=f,
-            file_name="fincas_registradas.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-
 # --- SECCIÓN DE ANÁLISIS DE EFICIENCIA Y RENTABILIDAD ---
 st.markdown("---")
 st.header("📊 Análisis de Eficiencia y Sectorial")
