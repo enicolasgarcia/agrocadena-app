@@ -74,3 +74,38 @@ if os.path.exists(archivo_base):
             file_name="fincas_registradas.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+
+# --- SECCIÓN DE ANÁLISIS DE EFICIENCIA Y RENTABILIDAD ---
+st.markdown("---")
+st.header("📊 Análisis de Eficiencia y Sectorial")
+
+# Usamos df_existente o df_mostrar (la que tengas definida arriba)
+df_analisis = df_existente 
+
+if not df_analisis.empty:
+    # 1. MÉTRICAS GLOBALES
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Gasto Promedio", f"${df_analisis['Costo_Total'].mean():,.0f}")
+    with col2:
+        st.metric("Precio Mínimo Promedio", f"${df_analisis['Precio_Minimo'].mean():,.0f}")
+    with col3:
+        st.metric("Total Fincas", len(df_analisis))
+
+    # 2. GRÁFICO DE COSTOS POR CULTIVO
+    st.subheader("📈 Inversión por Cultivo")
+    st.bar_chart(df_analisis.groupby('Cultivo')['Costo_Total'].sum())
+
+    # 3. BUSCADOR
+    st.subheader("🔍 Buscador de Historial")
+    busqueda = st.text_input("Filtrar por nombre o cultivo:")
+    if busqueda:
+        df_filtrado = df_analisis[df_analisis['Nombre_Finca'].str.contains(busqueda, case=False)]
+        st.dataframe(df_filtrado)
+else:
+    st.info("Registra datos para ver el análisis.")
+
+# --- BOTÓN DE DESCARGA (Esto ya lo tenías, déjalo al final) ---
+if os.path.exists(archivo_base):
+    # ... (tu código del botón de descarga)
