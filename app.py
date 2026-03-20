@@ -1,26 +1,38 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
 
-# 1. CONFIGURACIÓN INICIAL (Como en tu Jupyter)
+# 1. CONFIGURACIÓN INICIAL Y BASE DE DATOS CLIMÁTICA
 archivo_base = 'fincas_registradas.xlsx'
 
-# Intentamos cargar el archivo, si no existe, creamos el DataFrame vacío
+# Diccionario de temperaturas promedio por departamento (Basado en tus imágenes)
+base_clima = {
+    "Cundinamarca": 19, "Antioquia": 22, "Valle del Cauca": 24,
+    "Huila": 25, "Tolima": 26, "Santander": 23, "Boyacá": 16,
+    "Magdalena": 28, "Meta": 26, "Nariño": 18, "Casanare": 27,
+    "Quindío": 21, "Caldas": 21, "Risaralda": 21, "Bolívar": 28
+}
+
+# Intentamos cargar el archivo, si no existe, creamos el DataFrame con la nueva columna 'Departamento'
 if os.path.exists(archivo_base):
     df_existente = pd.read_excel(archivo_base)
 else:
-    columnas = ['Nombre_Finca', 'Cultivo', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
+    columnas = ['Nombre_Finca', 'Cultivo', 'Departamento', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
     df_existente = pd.DataFrame(columns=columnas)
 
 # --- INTERFAZ DE USUARIO ---
-st.title("🚜 Consultoría Agrocadena: Punto de Equilibrio")
+st.set_page_config(page_title="Agrocadena Pro", layout="wide")
+st.title("🚜 Consultoría Agrocadena: Punto de Equilibrio Inteligente")
 
 with st.sidebar:
     st.header("📝 Nuevo Registro")
     with st.form("registro_finca"):
         nombre = st.text_input("Nombre de la Finca")
-        cultivo = st.text_input("Cultivo (ej: Mango, Lulo)")
+        cultivo = st.text_input("Cultivo (ej: Pepino, Mango)")
+        
+        # NUEVO: Selector de Departamento
+        departamento = st.selectbox("Ubicación (Departamento)", options=sorted(list(base_clima.keys())))
+        
         produccion = st.number_input("Producción esperada (Kg/Unidades)", min_value=1.0)
         inv_inicial = st.number_input("Inversión Inicial ($)", min_value=0.0)
         costo_mensual = st.number_input("Costo mensual operativo ($)", min_value=0.0)
@@ -29,15 +41,19 @@ with st.sidebar:
         submit = st.form_submit_button("🚀 Calcular y Guardar")
 
         if submit:
-            if nombre:
-                # LÓGICA DE TU JUPYTER
+            if nombre and cultivo:
+                # LÓGICA DE CÁLCULO
                 gasto_total = inv_inicial + (costo_mensual * meses)
                 precio_minimo = gasto_total / produccion
                 
-                # Crear nueva fila
+                # LÓGICA CLIMÁTICA (Basada en tus imágenes)
+                temp_finca = base_clima[departamento]
+                
+                # Crear nueva fila con Departamento
                 nueva_fila = pd.DataFrame([{
                     'Nombre_Finca': nombre,
                     'Cultivo': cultivo,
+                    'Departamento': departamento,
                     'Inversion_Inicial': inv_inicial,
                     'Costo_Mensual': costo_mensual,
                     'Meses': meses,
@@ -45,65 +61,72 @@ with st.sidebar:
                     'Precio_Minimo': precio_minimo
                 }])
 
-                # Combinar y guardar localmente
+                # Combinar y guardar
                 df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
                 df_final.to_excel(archivo_base, index=False)
                 
-                st.success(f"✅ ¡{nombre} guardado exitosamente!")
+                st.success(f"✅ ¡{nombre} en {departamento} guardado!")
+                
+                # Alerta Climática Inmediata
+                if temp_finca > 27:
+                    st.warning(f"🔥 Alerta en {departamento}: Temp de {temp_finca}°C. Riesgo de estrés hídrico.")
+                elif temp_finca < 17:
+                    st.info(f"❄️ Alerta en {departamento}: Temp de {temp_finca}°C. Crecimiento más lento.")
+                
                 st.balloons()
-                st.rerun() # Refresca para mostrar la tabla actualizada
+                st.rerun()
             else:
-                st.error("⚠️ Por favor, ingresa el nombre de la finca.")
+                st.error("⚠️ Por favor, completa nombre y cultivo.")
 
-# --- MOSTRAR RESULTADOS EN PANTALLA PRINCIPAL ---
-st.subheader("📋 Historial de Fincas")
-# Mostramos los datos cargados o los nuevos
-if os.path.exists(archivo_base):
-    df_mostrar = pd.read_excel(archivo_base)
-    st.dataframe(df_mostrar)
-else:
-    st.info("Aún no hay fincas registradas.")
+# --- CUERPO PRINCIPAL ---
+col_tabla, col_guia = st.columns([2, 1])
 
-# --- SECCIÓN DE ANÁLISIS DE EFICIENCIA Y RENTABILIDAD ---
+with col_tabla:
+    st.subheader("📋 Historial de Fincas")
+    if not df_existente.empty:
+        st.dataframe(df_existente, use_container_width=True)
+    else:
+        st.info("Aún no hay fincas registradas.")
+
+with col_guia:
+    st.subheader("🌱 Guía Técnica")
+    # Mostramos las imágenes que encontraste
+    if os.path.exists("1000023360.jpg"):
+        st.image("1000023360.jpg", caption="Ciclo de Vida del Cultivo")
+    if os.path.exists("1000023362.jpg"):
+        st.image("1000023362.jpg", caption="Impacto del Clima")
+
+# --- SECCIÓN DE ANÁLISIS ---
 st.markdown("---")
 st.header("📊 Análisis de Eficiencia y Sectorial")
 
-# Usamos df_existente que es el que cargamos al principio
 if not df_existente.empty:
     # 1. MÉTRICAS GLOBALES
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Gasto Promedio", f"${df_existente['Costo_Total'].mean():,.0f}")
-    with col2:
-        st.metric("Precio Mínimo Promedio", f"${df_existente['Precio_Minimo'].mean():,.0f}")
-    with col3:
-        st.metric("Total Fincas", len(df_existente))
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Gasto Promedio", f"${df_existente['Costo_Total'].mean():,.0f}")
+    m2.metric("Precio Mínimo Promedio", f"${df_existente['Precio_Minimo'].mean():,.0f}")
+    m3.metric("Total Fincas", len(df_existente))
 
-    # 2. GRÁFICO DE COSTOS POR CULTIVO
-    st.subheader("📈 Inversión Total por Cultivo")
-    # Agrupamos los costos para ver cuál cultivo requiere más dinero
-    costos_por_cultivo = df_existente.groupby('Cultivo')['Costo_Total'].sum()
-    st.bar_chart(costos_por_cultivo)
+    # 2. GRÁFICO POR DEPARTAMENTO (NUEVO)
+    st.subheader("🌎 Costos por Departamento")
+    costos_dept = df_existente.groupby('Departamento')['Costo_Total'].sum()
+    st.bar_chart(costos_dept)
 
     # 3. BUSCADOR
-    st.subheader("🔍 Buscador de Historial")
-    busqueda = st.text_input("Filtrar por nombre de finca o tipo de cultivo:")
+    st.subheader("🔍 Buscador")
+    busqueda = st.text_input("Buscar finca, cultivo o departamento:")
     if busqueda:
-        df_filtrado = df_existente[
-            df_existente['Nombre_Finca'].str.contains(busqueda, case=False) | 
-            df_existente['Cultivo'].str.contains(busqueda, case=False)
-        ]
-        st.dataframe(df_filtrado)
-else:
-    st.info("💡 Registra tu primera finca en el menú de la izquierda para ver el análisis.")
+        mask = df_existente.apply(lambda row: row.astype(str).str.contains(busqueda, case=False).any(), axis=1)
+        st.dataframe(df_existente[mask])
 
-# --- BOTÓN PARA DESCARGAR EL EXCEL A TU PC (BLOQUE FINAL) ---
+# --- BOTÓN DESCARGA ---
 st.sidebar.markdown("---")
 if os.path.exists(archivo_base):
     with open(archivo_base, "rb") as f:
         st.sidebar.download_button(
-            label="📥 Descargar Excel a mi PC",
+            label="📥 Descargar Excel actualizado",
             data=f,
-            file_name="fincas_registradas.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            file_name="fincas_agrocadena.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="btn_descarga_unico"
         )
