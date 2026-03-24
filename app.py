@@ -83,7 +83,7 @@ with st.sidebar:
 col_tabla, col_guia = st.columns([2, 1])
 
 with col_tabla:
-    st.subheader("📋 Historial de Fincas")
+    st.subheader("Historial de Fincas")
     if not df_existente.empty:
         st.dataframe(df_existente, use_container_width=True)
     else:
