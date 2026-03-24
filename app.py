@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 # 1. CONFIGURACIÓN INICIAL Y BASE DE DATOS CLIMÁTICA
-archivo_base = 'fincas_registradas.xlsx'
+archivo_base = "https://docs.google.com/spreadsheets/d/11i4eNs0dj2veqdfYWTDizF3zbCsJzQx9N9iKaYntYNg/edit?gid=513628329#gid=513628329"
 
 # Diccionario de temperaturas promedio por departamento (Basado en tus imágenes)
 base_clima = {
@@ -17,8 +17,9 @@ base_clima = {
 if os.path.exists(archivo_base):
     df_existente = pd.read_excel(archivo_base)
 else:
-    columnas = ['Nombre_Finca', 'Cultivo', 'Departamento', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
-    df_existente = pd.DataFrame(columns=columnas)
+    st.info("No se encuentra archivo.")
+    #columnas = ['Nombre_Finca', 'Cultivo', 'Departamento', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
+    #df_existente = pd.DataFrame(columns=columnas)
 
 # --- INTERFAZ DE USUARIO ---
 st.set_page_config(page_title="Agrocadena Pro", layout="wide")
