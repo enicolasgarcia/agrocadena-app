@@ -23,7 +23,7 @@ else:
 
 # --- INTERFAZ DE USUARIO ---
 st.set_page_config(page_title="Agrocadena Pro", layout="wide")
-st.title("🚜 Consultoría Agrocadena: Punto de Equilibrio Inteligente")
+st.title("🚜 Consultoría Agrocadena")
 
 with st.sidebar:
     st.header("📝 Nuevo Registro")
