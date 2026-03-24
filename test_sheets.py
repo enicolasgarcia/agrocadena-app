@@ -7,7 +7,7 @@ scope = ["https://spreadsheets.google.com/feeds",
 creds = ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", scope)
 client = gspread.authorize(creds)
 
-sheet = client.open("NOMBRE_DE_TU_SHEET").sheet1
+sheet = client.open("Agrocadena Datos").sheet1  # ← CAMBIA ESTO
 
 sheet.append_row(["Finca 1", 100, 5000])
 
