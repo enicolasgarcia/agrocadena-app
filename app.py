@@ -18,8 +18,8 @@ if os.path.exists(archivo_base):
     df_existente = pd.read_excel(archivo_base)
 else:
     st.info("No se encuentra archivo.")
-    #columnas = ['Nombre_Finca', 'Cultivo', 'Departamento', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
-    #df_existente = pd.DataFrame(columns=columnas)
+    columnas = ['Nombre_Finca', 'Cultivo', 'Departamento', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
+    df_existente = pd.DataFrame(columns=columnas)
 
 # --- INTERFAZ DE USUARIO ---
 st.set_page_config(page_title="Agrocadena Pro", layout="wide")
