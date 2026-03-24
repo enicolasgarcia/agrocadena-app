@@ -64,7 +64,7 @@ with st.sidebar:
 
                 # Combinar y guardar
                 df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
-                df_final.to_excel(archivo_base, index=False)
+                #df_final.to_excel(archivo_base, index=False)
                 
                 st.success(f"✅ ¡{nombre} en {departamento} guardado!")
                 
