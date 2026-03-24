@@ -1,11 +1,21 @@
 import streamlit as st
 import pandas as pd
 import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-# 1. CONFIGURACIÓN INICIAL Y BASE DE DATOS CLIMÁTICA
+# 1️⃣ CONFIGURACIÓN DE GOOGLE SHEETS
+scope = ["https://spreadsheets.google.com/feeds",
+         "https://www.googleapis.com/auth/drive"]
+
+creds = ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", scope)
+client = gspread.authorize(creds)
+
+sheet = client.open("agro").sheet1  # ← tu Google Sheet
+
+# 2️⃣ CONFIGURACIÓN INICIAL Y BASE DE DATOS CLIMÁTICA
 archivo_base = "https://docs.google.com/spreadsheets/d/11i4eNs0dj2veqdfYWTDizF3zbCsJzQx9N9iKaYntYNg/edit?gid=513628329#gid=513628329"
 
-# Diccionario de temperaturas promedio por departamento (Basado en tus imágenes)
 base_clima = {
     "Cundinamarca": 19, "Antioquia": 22, "Valle del Cauca": 24,
     "Huila": 25, "Tolima": 26, "Santander": 23, "Boyacá": 16,
@@ -13,11 +23,10 @@ base_clima = {
     "Quindío": 21, "Caldas": 21, "Risaralda": 21, "Bolívar": 28
 }
 
-# Intentamos cargar el archivo, si no existe, creamos el DataFrame con la nueva columna 'Departamento'
+# Intentamos cargar el archivo local, si no existe, creamos DataFrame vacío
 if os.path.exists(archivo_base):
     df_existente = pd.read_excel(archivo_base)
 else:
-    st.info("No se encuentra archivo.")
     columnas = ['Nombre_Finca', 'Cultivo', 'Departamento', 'Inversion_Inicial', 'Costo_Mensual', 'Meses', 'Costo_Total', 'Precio_Minimo']
     df_existente = pd.DataFrame(columns=columnas)
 
@@ -30,10 +39,7 @@ with st.sidebar:
     with st.form("registro_finca"):
         nombre = st.text_input("Nombre de la Finca")
         cultivo = st.text_input("Cultivo (ej: Pepino, Mango)")
-        
-        # NUEVO: Selector de Departamento
         departamento = st.selectbox("Ubicación (Departamento)", options=sorted(list(base_clima.keys())))
-        
         produccion = st.number_input("Producción esperada (Kg/Unidades)", min_value=1.0)
         inv_inicial = st.number_input("Inversión Inicial ($)", min_value=0.0)
         costo_mensual = st.number_input("Costo mensual operativo ($)", min_value=0.0)
@@ -43,32 +49,22 @@ with st.sidebar:
 
         if submit:
             if nombre and cultivo:
-                # LÓGICA DE CÁLCULO
+                # Cálculos
                 gasto_total = inv_inicial + (costo_mensual * meses)
                 precio_minimo = gasto_total / produccion
-                
-                # LÓGICA CLIMÁTICA (Basada en tus imágenes)
                 temp_finca = base_clima[departamento]
-                
-                # Crear nueva fila con Departamento
-                nueva_fila = pd.DataFrame([{
-                    'Nombre_Finca': nombre,
-                    'Cultivo': cultivo,
-                    'Departamento': departamento,
-                    'Inversion_Inicial': inv_inicial,
-                    'Costo_Mensual': costo_mensual,
-                    'Meses': meses,
-                    'Costo_Total': gasto_total,
-                    'Precio_Minimo': precio_minimo
-                }])
 
-                # Combinar y guardar
-                df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
-                #df_final.to_excel(archivo_base, index=False)
-                
-                st.success(f"✅ ¡{nombre} en {departamento} guardado!")
-                
-                # Alerta Climática Inmediata
+                # Crear fila nueva
+                nueva_fila = [nombre, cultivo, departamento, inv_inicial, costo_mensual, meses, gasto_total, precio_minimo]
+
+                # Guardar en Google Sheets
+                try:
+                    sheet.append_row(nueva_fila)
+                    st.success(f"✅ ¡{nombre} en {departamento} guardado en Google Sheets!")
+                except Exception as e:
+                    st.error(f"❌ Error al guardar en Google Sheets: {e}")
+
+                # Alerta climática
                 if temp_finca > 27:
                     st.warning(f"🔥 Alerta en {departamento}: Temp de {temp_finca}°C. Riesgo de estrés hídrico.")
                 elif temp_finca < 17:
@@ -91,7 +87,6 @@ with col_tabla:
 
 with col_guia:
     st.subheader("🌱 Guía Técnica")
-    # Mostramos las imágenes que encontraste
     if os.path.exists("1000023360.jpg"):
         st.image("1000023360.jpg", caption="Ciclo de Vida del Cultivo")
     if os.path.exists("1000023362.jpg"):
@@ -102,18 +97,15 @@ st.markdown("---")
 st.header("📊 Análisis de Eficiencia y Sectorial")
 
 if not df_existente.empty:
-    # 1. MÉTRICAS GLOBALES
     m1, m2, m3 = st.columns(3)
     m1.metric("Gasto Promedio", f"${df_existente['Costo_Total'].mean():,.0f}")
     m2.metric("Precio Mínimo Promedio", f"${df_existente['Precio_Minimo'].mean():,.0f}")
     m3.metric("Total Fincas", len(df_existente))
 
-    # 2. GRÁFICO POR DEPARTAMENTO (NUEVO)
     st.subheader("🌎 Costos por Departamento")
     costos_dept = df_existente.groupby('Departamento')['Costo_Total'].sum()
     st.bar_chart(costos_dept)
 
-    # 3. BUSCADOR
     st.subheader("🔍 Buscador")
     busqueda = st.text_input("Buscar finca, cultivo o departamento:")
     if busqueda:
