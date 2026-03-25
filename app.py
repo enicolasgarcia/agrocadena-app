@@ -10,7 +10,7 @@ scope = ["https://spreadsheets.google.com/feeds",
 creds_dict = dict(st.secrets["GOOGLE_CREDS"])
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 
-client = gspread.authorize(creds)  # 🔥 ESTO FALTABA
+client = gspread.authorize(creds)
 sheet = client.open("agro").sheet1
 
 # 🔥 TRAER DATOS DESDE GOOGLE SHEETS
@@ -48,8 +48,10 @@ with st.sidebar:
                 precio_minimo = gasto_total / produccion
                 temp_finca = base_clima[departamento]
 
+                # 🔥 IMPORTANTE: incluir Cantidad_kg
                 nueva_fila = [
                     nombre, cultivo, departamento,
+                    produccion,  # 👈 clave para el análisis
                     inv_inicial, costo_mensual,
                     meses, gasto_total, precio_minimo
                 ]
@@ -76,3 +78,64 @@ if not df_existente.empty:
     st.dataframe(df_existente)
 else:
     st.info("No hay datos aún")
+
+# ==============================
+# 🔥 ANÁLISIS INTELIGENTE
+# ==============================
+
+st.divider()
+st.header("📊 Análisis Inteligente")
+
+if df_existente.empty:
+    st.warning("⚠️ No hay datos suficientes para análisis")
+else:
+    df = df_existente.copy()
+    df = df.dropna()
+
+    # 🔥 Cálculo con tu columna correcta
+    df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_kg"]
+
+    # Promedio por cultivo
+    promedios = df.groupby("Cultivo")["Costo_por_Kg"].mean().reset_index()
+    promedios.rename(columns={"Costo_por_Kg": "Promedio_Cultivo"}, inplace=True)
+
+    df = df.merge(promedios, on="Cultivo", how="left")
+
+    # Eficiencia
+    df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"]) * 100
+
+    # --- SELECTOR ---
+    st.subheader("🔎 Análisis por finca")
+
+    finca_seleccionada = st.selectbox(
+        "Selecciona una finca",
+        df["Nombre_Finca"].unique()
+    )
+
+    datos_finca = df[df["Nombre_Finca"] == finca_seleccionada]
+    row = datos_finca.iloc[0]
+
+    # --- MÉTRICAS ---
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Costo por Kg", f"${row['Costo_por_Kg']:,.0f}")
+    col2.metric("Promedio del cultivo", f"${row['Promedio_Cultivo']:,.0f}")
+    col3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%")
+
+    # --- DIAGNÓSTICO ---
+    st.subheader("💡 Diagnóstico")
+
+    if row["Eficiencia_%"] <= 0:
+        st.success("✅ Estás por debajo del promedio (buena eficiencia)")
+    else:
+        st.error("⚠️ Estás por encima del promedio (costos altos)")
+
+    # --- RECOMENDACIÓN ---
+    st.subheader("📌 Recomendación")
+
+    if row["Eficiencia_%"] > 10:
+        st.warning("Reduce costos (insumos o mano de obra)")
+    elif row["Eficiencia_%"] < -10:
+        st.success("Muy eficiente, podrías aumentar producción")
+    else:
+        st.info("Estás en un nivel promedio")
