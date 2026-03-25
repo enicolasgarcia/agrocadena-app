@@ -93,7 +93,7 @@ else:
     df = df.dropna()
 
     # 🔥 Cálculo con tu columna correcta
-    df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_kg"]
+    df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"]
 
     # Promedio por cultivo
     promedios = df.groupby("Cultivo")["Costo_por_Kg"].mean().reset_index()
