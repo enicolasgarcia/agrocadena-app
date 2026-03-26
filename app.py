@@ -132,27 +132,41 @@ if df_existente.empty:
     st.warning("⚠️ No hay datos suficientes para análisis")
 else:
     df = df_existente.copy()
+
+    # 🔥 Asegurar columnas (por si faltan)
+    columnas = ["Precio_Venta", "Cantidad_Kg", "Costo_Total"]
+    for col in columnas:
+        if col not in df.columns:
+            df[col] = 0
+
+    # 🔥 Convertir a numérico
+    for col in columnas:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
     df = df.fillna(0)
 
-    # 🔥 PRIMERO: convertir a numérico
-    df["Precio_Venta"] = pd.to_numeric(df["Precio_Venta"], errors="coerce")
-    df["Cantidad_Kg"] = pd.to_numeric(df["Cantidad_Kg"], errors="coerce")
-    df["Costo_Total"] = pd.to_numeric(df["Costo_Total"], errors="coerce")
+    # 🔥 Evitar división por 0
+    df["Cantidad_Kg"] = df["Cantidad_Kg"].replace(0, 1)
 
-    # 🔥 DESPUÉS: cálculos
+    # 🔥 Cálculos
     df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"]
     df["Ingreso"] = df["Precio_Venta"] * df["Cantidad_Kg"]
     df["Ganancia"] = df["Ingreso"] - df["Costo_Total"]
 
-    # Promedio por cultivo
+    # 🔥 Promedio por cultivo
     promedios = df.groupby("Cultivo")["Costo_por_Kg"].mean().reset_index()
     promedios.rename(columns={"Costo_por_Kg": "Promedio_Cultivo"}, inplace=True)
 
     df = df.merge(promedios, on="Cultivo", how="left")
 
-    # Eficiencia
-    df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"]) * 100
-  
+    # 🔥 Evitar división por 0 en eficiencia
+    df["Promedio_Cultivo"] = df["Promedio_Cultivo"].replace(0, 1)
+
+    df["Eficiencia_%"] = (
+        (df["Costo_por_Kg"] - df["Promedio_Cultivo"])
+        / df["Promedio_Cultivo"]
+    ) * 100
+
     # --- SELECTOR ---
     st.subheader("🔎 Análisis por finca")
 
@@ -170,9 +184,9 @@ else:
     col1.metric("Costo por Kg", f"${row['Costo_por_Kg']:,.0f}")
     col2.metric("Promedio del cultivo", f"${row['Promedio_Cultivo']:,.0f}")
     col3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%")
+
     ganancia_valor = row.get("Ganancia", 0)
 
-    # 🔥 Convertir a número seguro
     try:
         ganancia_valor = float(ganancia_valor)
     except:
@@ -188,7 +202,7 @@ else:
     else:
         st.error("⚠️ Estás por encima del promedio (costos altos)")
 
-    # --- GANANCIA / PÉRDIDA ---
+    # --- RESULTADO FINANCIERO ---
     st.subheader("💰 Resultado financiero")
 
     if ganancia_valor > 0:
