@@ -80,6 +80,35 @@ else:
     st.info("No hay datos aún")
 
 # ==============================
+# 🗑️ ELIMINAR REGISTROS
+# ==============================
+
+st.divider()
+st.subheader("🗑️ Eliminar registro")
+
+if not df_existente.empty:
+
+    df_existente = df_existente.copy()
+
+    df_existente["ID"] = df_existente["Nombre_Finca"] + " - " + df_existente["Cultivo"]
+
+    seleccion = st.selectbox(
+        "Selecciona el registro a eliminar",
+        df_existente["ID"]
+    )
+
+    if st.button("Eliminar registro"):
+        df_nuevo = df_existente[df_existente["ID"] != seleccion]
+
+        sheet.clear()
+        sheet.append_row(list(df_nuevo.drop(columns=["ID"]).columns))
+
+        for _, row in df_nuevo.drop(columns=["ID"]).iterrows():
+            sheet.append_row(row.tolist())
+
+        st.success("✅ Registro eliminado correctamente")
+        st.rerun()
+# ==============================
 # 🔥 ANÁLISIS INTELIGENTE
 # ==============================
 
