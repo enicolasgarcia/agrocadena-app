@@ -186,7 +186,7 @@ else:
 
     if ganancia_valor > 0:
         st.success("🟢 Estás generando GANANCIA")
-    elif Ganacia_valor < 0:
+    elif Ganancia_valor < 0:
         st.error("🔴 Estás generando PÉRDIDA")
     else:
         st.info("🟡 Estás en punto de equilibrio")
