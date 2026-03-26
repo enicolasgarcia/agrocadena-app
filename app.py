@@ -132,7 +132,7 @@ if df_existente.empty:
     st.warning("⚠️ No hay datos suficientes para análisis")
 else:
     df = df_existente.copy()
-    df = df.dropna()
+    df = df.fillna(0) 
 
     # 🔥 Cálculo con tu columna correcta
     df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"]
@@ -143,9 +143,17 @@ else:
 
     df = df.merge(promedios, on="Cultivo", how="left")
 
+    # 🔥 CONVERTIR A NUMÉRICO + CALCULAR GANANCIA
+    df["Precio_Venta"] = pd.to_numeric(df["Precio_Venta"], errors="coerce")
+    df["Cantidad_Kg"] = pd.to_numeric(df["Cantidad_Kg"], errors="coerce")
+    df["Costo_Total"] = pd.to_numeric(df["Costo_Total"], errors="coerce")
+
+    df["Ingreso"] = df["Precio_Venta"] * df["Cantidad_Kg"]
+    df["Ganancia"] = df["Ingreso"] - df["Costo_Total"]
+         
     # Eficiencia
     df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"]) * 100
-
+  
     # --- SELECTOR ---
     st.subheader("🔎 Análisis por finca")
 
