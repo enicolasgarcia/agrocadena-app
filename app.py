@@ -36,6 +36,7 @@ with st.sidebar:
         cultivo = st.text_input("Cultivo")
         departamento = st.selectbox("Departamento", options=sorted(list(base_clima.keys())))
         produccion = st.number_input("Producción", min_value=1.0)
+        precio_venta = st.number_input("Precio de venta por Kg", min_value=0.0)
         inv_inicial = st.number_input("Inversión Inicial", min_value=0.0)
         costo_mensual = st.number_input("Costo mensual", min_value=0.0)
         meses = st.number_input("Meses", min_value=1.0)
@@ -46,6 +47,8 @@ with st.sidebar:
             if nombre and cultivo:
                 gasto_total = inv_inicial + (costo_mensual * meses)
                 precio_minimo = gasto_total / produccion
+                ingreso = precio_venta * produccion
+                ganancia = ingreso - gasto_total
                 temp_finca = base_clima[departamento]
 
                 # 🔥 IMPORTANTE: incluir Cantidad_kg
@@ -53,7 +56,11 @@ with st.sidebar:
                     nombre, cultivo, departamento,
                     produccion,  # 👈 clave para el análisis
                     inv_inicial, costo_mensual,
-                    meses, gasto_total, precio_minimo
+                    meses, gasto_total, 
+                    precio_minimo,
+                    precio_venta,
+                    ingreso,
+                    ganancia
                 ]
 
                 try:
@@ -151,11 +158,12 @@ else:
     row = datos_finca.iloc[0]
 
     # --- MÉTRICAS ---
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     col1.metric("Costo por Kg", f"${row['Costo_por_Kg']:,.0f}")
     col2.metric("Promedio del cultivo", f"${row['Promedio_Cultivo']:,.0f}")
     col3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%")
+    col4.metric("Ganancia", f"${row['Ganancia']:,.0f}")
 
     # --- DIAGNÓSTICO ---
     st.subheader("💡 Diagnóstico")
@@ -164,6 +172,16 @@ else:
         st.success("✅ Estás por debajo del promedio (buena eficiencia)")
     else:
         st.error("⚠️ Estás por encima del promedio (costos altos)")
+
+    # --- GANANCIA / PÉRDIDA ---
+    st.subheader("💰 Resultado financiero")
+
+    if row["Ganancia"] > 0:
+        st.success("🟢 Estás generando GANANCIA")
+    elif row["Ganancia"] < 0:
+        st.error("🔴 Estás generando PÉRDIDA")
+    else:
+        st.info("🟡 Estás en punto de equilibrio")
 
     # --- RECOMENDACIÓN ---
     st.subheader("📌 Recomendación")
