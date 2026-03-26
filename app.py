@@ -75,7 +75,13 @@ with st.sidebar:
 st.subheader("📊 Historial")
 
 if not df_existente.empty:
-    st.dataframe(df_existente)
+    st.dataframe(df_existente.style.format({
+    "Inversion_Inicial": "{:,.0f}",
+    "Costo_Mensual": "{:,.0f}",
+    "Costo_Total": "{:,.0f}",
+    "Precio_Minimo": "{:,.0f}",
+    "Cantidad_Kg": "{:,.0f}"
+}))
 else:
     st.info("No hay datos aún")
 
