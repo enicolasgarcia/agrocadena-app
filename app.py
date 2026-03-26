@@ -163,7 +163,12 @@ else:
     col1.metric("Costo por Kg", f"${row['Costo_por_Kg']:,.0f}")
     col2.metric("Promedio del cultivo", f"${row['Promedio_Cultivo']:,.0f}")
     col3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%")
-    col4.metric("Ganancia", f"${row['Ganancia']:,.0f}")
+    ganancia_valor = row.get("Ganancia", 0)
+
+    if pd.isna(ganancia_valor):
+     ganancia_valor = 0
+
+    col4.metric("Ganancia", f"${ganancia_valor:,.0f}")
 
     # --- DIAGNÓSTICO ---
     st.subheader("💡 Diagnóstico")
@@ -176,9 +181,9 @@ else:
     # --- GANANCIA / PÉRDIDA ---
     st.subheader("💰 Resultado financiero")
 
-    if row["Ganancia"] > 0:
+    if ganancia_valor > 0:
         st.success("🟢 Estás generando GANANCIA")
-    elif row["Ganancia"] < 0:
+    elif ganacia_valor < 0:
         st.error("🔴 Estás generando PÉRDIDA")
     else:
         st.info("🟡 Estás en punto de equilibrio")
