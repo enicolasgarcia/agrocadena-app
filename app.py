@@ -165,8 +165,11 @@ else:
     col3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%")
     ganancia_valor = row.get("Ganancia", 0)
 
-    if pd.isna(ganancia_valor):
-     ganancia_valor = 0
+    # 🔥 Convertir a número seguro
+    try:
+        ganancia_valor = float(ganancia_valor)
+    except:
+        ganancia_valor = 0
 
     col4.metric("Ganancia", f"${ganancia_valor:,.0f}")
 
