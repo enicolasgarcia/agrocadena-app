@@ -92,13 +92,23 @@ with st.sidebar:
 st.subheader("📊 Historial de Producción")
 
 if not df_existente.empty:
-    # Formateo de columnas para que se vea limpio
-    st.dataframe(df_existente.style.format({
+    # Creamos una copia para no dañar los datos originales
+    df_tabla = df_existente.copy()
+    
+    # Columnas que queremos formatear con $
+    cols_dinero = ["Inversion_Inicial", "Costo_Mensual", "Costo_Total", "Precio_Minimo", "Precio_Venta", "Ingreso", "Ganancia"]
+    
+    # Limpieza: Convertimos a número, si hay error ponemos 0
+    for col in cols_dinero:
+        if col in df_tabla.columns:
+            df_tabla[col] = pd.to_numeric(df_tabla[col], errors='coerce').fillna(0)
+    
+    # Formateo seguro
+    st.dataframe(df_tabla.style.format({
         "Inversion_Inicial": "${:,.0f}",
         "Costo_Mensual": "${:,.0f}",
         "Costo_Total": "${:,.0f}",
         "Precio_Minimo": "${:,.0f}",
-        "Cantidad_Kg": "{:,.0f} kg",
         "Precio_Venta": "${:,.0f}",
         "Ingreso": "${:,.0f}",
         "Ganancia": "${:,.0f}"
