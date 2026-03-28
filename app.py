@@ -33,9 +33,10 @@ with st.sidebar:
         cultivo = st.text_input("Cultivo")
         departamento = st.selectbox("Departamento", options=sorted(list(base_clima.keys())))
         
-        # --- SECCIÓN DE UNIDADES ---
+        # --- SECCIÓN DE UNIDADES ACTUALIZADA ---
         col_u1, col_u2 = st.columns(2)
         with col_u1:
+            # Aquí añadimos todas las unidades que pediste
             unidad = st.selectbox("Unidad de medida", ["Kg", "Quintales (50kg)", "Bultos (50kg)", "Libras"])
         with col_u2:
             produccion_input = st.number_input("Cantidad", min_value=1.0)
@@ -70,15 +71,13 @@ with st.sidebar:
                 
                 sheet.append_row(nueva_fila)
                 st.success("✅ Guardado en la nube")
-                st.balloons()
                 st.rerun()
 
-# --- TABLA DE HISTORIAL (BLINDADA) ---
+# --- TABLA DE HISTORIAL ---
 st.subheader("📋 Historial de Producción")
 if not df_existente.empty:
     df_tabla = df_existente.copy()
     cols_dinero = ["Inversion_Inicial", "Costo_Mensual", "Costo_Total", "Precio_Minimo", "Precio_Venta", "Ingreso", "Ganancia"]
-    
     for col in cols_dinero:
         if col in df_tabla.columns:
             df_tabla[col] = pd.to_numeric(df_tabla[col], errors='coerce').fillna(0)
@@ -89,77 +88,71 @@ if not df_existente.empty:
         "Precio_Venta": "${:,.0f}", "Ingreso": "${:,.0f}", "Ganancia": "${:,.0f}",
         "Cantidad_Kg": "{:,.1f} kg"
     }), use_container_width=True)
-else:
-    st.info("Aún no hay datos.")
 
-# --- ELIMINAR REGISTROS ---
-st.divider()
-if not df_existente.empty:
-    with st.expander("🗑️ Zona de Peligro: Eliminar Registros"):
-        df_existente["ID"] = df_existente["Nombre_Finca"] + " - " + df_existente["Cultivo"]
-        seleccion = st.selectbox("Selecciona registro", df_existente["ID"])
-        if st.button("Confirmo que deseo eliminarlo"):
-            df_nuevo = df_existente[df_existente["ID"] != seleccion].drop(columns=["ID"])
-            sheet.clear()
-            sheet.append_row(list(df_nuevo.columns))
-            for _, row in df_nuevo.iterrows():
-                sheet.append_row(row.tolist())
-            st.rerun()
-
-# --- ANÁLISIS INTELIGENTE ---
+# --- ANÁLISIS INTELIGENTE (EL PLAN DE ACCIÓN ESTÁ AQUÍ) ---
 st.divider()
 st.header("📊 Análisis y Diagnóstico")
 
 if not df_existente.empty:
     df = df_existente.copy()
-    # Limpieza de columnas clave
-    for c in ["Precio_Venta", "Cantidad_Kg", "Costo_Total"]:
+    for c in ["Precio_Venta", "Cantidad_Kg", "Costo_Total", "Ganancia"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
     
     df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"].replace(0, 1)
     
-    # Promedio por cultivo para eficiencia
     promedios = df.groupby("Cultivo")["Costo_por_Kg"].mean().reset_index()
     promedios.rename(columns={"Costo_por_Kg": "Promedio_Cultivo"}, inplace=True)
     df = df.merge(promedios, on="Cultivo", how="left")
     df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"].replace(0, 1)) * 100
 
+    st.subheader("🔎 Análisis por finca")
     finca_sel = st.selectbox("Selecciona una finca para diagnóstico", df["Nombre_Finca"].unique())
     row = df[df["Nombre_Finca"] == finca_sel].iloc[0]
+    
+    # Aseguramos que los valores sean tratables
     ganancia_f = float(row["Ganancia"])
+    eficiencia_f = float(row["Eficiencia_%"])
     temp_f = base_clima.get(row["Departamento"], 20)
 
-    # MÉTRICAS
+    # MÉTRICAS VISUALES
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Costo/Kg", f"${row['Costo_por_Kg']:,.0f}")
     m2.metric("Producción", f"{row['Cantidad_Kg']:,.0f} Kg", f"{row['Cantidad_Kg']/50:.1f} bultos/qq")
-    m3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%", delta_color="inverse")
-    m4.metric("Ganancia", f"${ganancia_f:,.0f}")
+    m3.metric("Eficiencia", f"{eficiencia_f:.1f}%", delta_color="inverse")
+    m4.metric("Ganancia Est.", f"${ganancia_f:,.0f}")
 
-    # DIAGNÓSTICO
+    # --- BLOQUE DE DIAGNÓSTICO Y PLAN DE ACCIÓN ---
+    st.markdown("---")
     st.subheader("💡 Recomendación de Consultoría")
     
+    # 1. Resultado Financiero (El cuadro que viste en rojo/verde)
+    if ganancia_f > 0:
+        st.success(f"🟢 La finca {finca_sel} está operando con GANANCIA.")
+    elif ganancia_f < 0:
+        st.error(f"🔴 La finca {finca_sel} está operando con PÉRDIDA.")
+    else:
+        st.info(f"🟡 La finca {finca_sel} está en punto de equilibrio.")
+
+    # 2. Recomendación según Eficiencia
     col_a, col_b = st.columns(2)
     with col_a:
-        if row["Eficiencia_%"] <= 0:
-            st.success(f"✅ Tu costo está {abs(row['Eficiencia_%']):.1f}% por debajo del promedio. ¡Excelente control!")
+        st.markdown("**Análisis de Costos:**")
+        if eficiencia_f <= 0:
+            st.info(f"✅ Eres eficiente: Tus costos son un {abs(eficiencia_f):.1f}% menores al promedio.")
         else:
-            st.error(f"⚠️ Estás gastando {row['Eficiencia_%']:.1f}% más que el promedio. Revisa insumos.")
+            st.warning(f"⚠️ Costos elevados: Estás un {eficiencia_f:.1f}% por encima del promedio del sector.")
 
     with col_b:
-        if ganancia_f > 0:
-            st.success("🟢 Negocio rentable hoy.")
+        st.markdown("**Plan de Acción:**")
+        # Aquí está la lógica del plan que te faltaba
+        if ganancia_f < 0 and eficiencia_f > 0:
+            st.write("👉 **Urgente:** Reduce costos fijos y revisa el precio de los insumos.")
+        elif ganancia_f < 0 and eficiencia_f <= 0:
+            st.write("👉 **Estrategia:** Tu costo es bueno, pero el precio de venta es muy bajo. ¡Busca mejores mercados!")
+        elif ganancia_f > 0 and eficiencia_f > 10:
+            st.write("👉 **Optimización:** Ganas dinero, pero podrías ganar mucho más si controlas mejor los gastos.")
         else:
-            st.error("🔴 Estás operando en pérdida.")
+            st.write("👉 **Escalabilidad:** ¡Buen trabajo! Considera aumentar tu área de producción.")
 
-    # PLAN DE ACCIÓN
-    if ganancia_f < 0 and row["Eficiencia_%"] > 0:
-        st.warning("📌 **Plan:** Tus costos son altos. Prioriza negociar fertilizantes por volumen o reducir jornales.")
-    elif ganancia_f < 0 and row["Eficiencia_%"] <= 0:
-        st.info("📌 **Plan:** Eres eficiente, pero el precio de venta es bajo. Busca vender directo sin intermediarios.")
-    elif ganancia_f > 0:
-        st.success("📌 **Plan:** Mantén la estrategia. Podrías aumentar el área de siembra para escala.")
-
-    # CLIMA
-    if temp_f > 27:
-        st.warning(f"🌡️ **Nota Climática:** En {row['Departamento']} hace calor ({temp_f}°C). Según tus guías: Cuidado con el estrés hídrico.")
+    # 3. Nota Climática (Basada en tu infografía)
+    st.info(f"🌡️ **Dato Climático:** En {row['Departamento']} la temp. promedio es {temp_f}°C. Ajusta tu riego según la guía técnica.")
