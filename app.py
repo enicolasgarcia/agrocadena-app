@@ -156,3 +156,51 @@ if not df_existente.empty:
 
     # 3. Nota Climática (Basada en tu infografía)
     st.info(f"🌡️ **Dato Climático:** En {row['Departamento']} la temp. promedio es {temp_f}°C. Ajusta tu riego según la guía técnica.")
+
+# ==============================
+# 🗑️ MANTENIMIENTO: ELIMINAR REGISTROS
+# ==============================
+
+st.divider()
+st.subheader("🗑️ Zona de Corrección: Eliminar registro")
+
+# Usamos el dataframe original que viene de Google Sheets
+if not df_existente.empty:
+    # 1. Preparar la lista de selección para que sea clara
+    df_borrar = df_existente.copy()
+    
+    # Creamos un ID visual para que el usuario sepa qué está borrando
+    df_borrar["ID_Visual"] = df_borrar["Nombre_Finca"].astype(str) + " - " + df_borrar["Cultivo"].astype(str)
+
+    seleccion = st.selectbox(
+        "Busca y selecciona la finca que deseas borrar:",
+        options=df_borrar["ID_Visual"].unique(),
+        help="Cuidado: Esta acción eliminará el dato de Google Sheets permanentemente."
+    )
+
+    if st.button("❌ Eliminar Permanentemente"):
+        # 2. Filtrar el dataframe para quitar la fila seleccionada
+        # (Quitamos el ID_Visual antes de guardar)
+        df_nuevo = df_borrar[df_borrar["ID_Visual"] != seleccion].drop(columns=["ID_Visual"])
+
+        try:
+            # 3. Limpiar la hoja de Google Sheets
+            sheet.clear()
+            
+            # 4. Volver a escribir los encabezados
+            encabezados = list(df_nuevo.columns)
+            sheet.append_row(encabezados)
+            
+            # 5. Escribir los datos restantes (si los hay)
+            if not df_nuevo.empty:
+                # Convertimos el DF a una lista de listas para subirlo todo de golpe
+                filas_nuevas = df_nuevo.values.tolist()
+                sheet.append_rows(filas_nuevas)
+
+            st.success(f"✅ Registro '{seleccion}' eliminado con éxito de la nube.")
+            st.rerun() # Refrescar la app para ver la tabla limpia
+            
+        except Exception as e:
+            st.error(f"Hubo un problema al conectar con Google Sheets: {e}")
+else:
+    st.info("No hay registros en la base de datos para eliminar.")
