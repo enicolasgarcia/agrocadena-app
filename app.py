@@ -44,8 +44,8 @@ with st.sidebar:
 
         submit = st.form_submit_button("🚀 Guardar")
 
-        if submit:
-        if nombre and cultivo:
+if submit:
+    if nombre and cultivo:
 
         # 🔥 CONVERSIÓN A KG
         if unidad == "Kg":
