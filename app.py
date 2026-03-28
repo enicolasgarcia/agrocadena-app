@@ -33,7 +33,8 @@ precios_corabastos = {
     "cebolla": 1100,
     "aguacate": 5000,
     "fresa": 6500,
-    "banano": 2000
+    "banano": 2000,
+    "cafe": 11000 # Precio referencial por Kg según boletín
 }
 
 # --- INTERFAZ ---
@@ -133,45 +134,41 @@ if not df_existente.empty:
     m3.metric("Eficiencia", f"{eficiencia_f:.1f}%", delta_color="inverse")
     m4.metric("Ganancia Est.", f"${ganancia_f:,.0f}")
 
-    # --- COMPARATIVA DE MERCADO (CORABASTOS) ---
+    # --- COMPARATIVA DE MERCADO (INTELIGENTE) ---
     st.markdown("---")
     st.subheader("⚖️ Comparativa Corabastos vs Tu Finca")
     
-    # Limpiamos el nombre del cultivo que viene de la fila seleccionada
-    # .lower() lo pasa a minúscula y .strip() quita espacios accidentales
-    cultivo_usuario = str(row["Cultivo"]).lower().strip()
-    
+    # Función para quitar tildes y limpiar texto
+    def limpiar_texto(t):
+        import unicodedata
+        t = str(t).lower().strip()
+        # Esto quita tildes: transforma 'é' en 'e'
+        return "".join(c for c in unicodedata.normalize('NFD', t) if unicodedata.category(c) != 'Mn')
+
+    cultivo_usuario = limpiar_texto(row["Cultivo"])
     p_corabastos = 0
     nombre_oficial = ""
 
-    # Buscamos coincidencias inteligentes
-    for nombre_clavo, precio in precios_corabastos.items():
-        if nombre_clavo in cultivo_usuario: # Si "pepino" está dentro de "Pepino Coit"
+    # Buscamos si alguna palabra clave está en lo que escribió el usuario
+    for clave, precio in precios_corabastos.items():
+        if clave in cultivo_usuario:
             p_corabastos = precio
-            nombre_oficial = nombre_clavo.capitalize()
+            nombre_oficial = clave.capitalize()
             break
 
     if p_corabastos > 0:
-        # Cálculos
         diferencia = p_corabastos - precio_v_f
-        
         c1, c2, c3 = st.columns(3)
-        c1.metric(f"Precio {nombre_oficial} (Mercado)", f"${p_corabastos:,.0f}/Kg")
+        c1.metric(f"Corabastos ({nombre_oficial})", f"${p_corabastos:,.0f}/Kg")
         c2.metric("Tu Precio Venta", f"${precio_v_f:,.0f}/Kg")
-        
-        # El delta mostrará en rojo si estás por debajo y verde si estás por encima
-        c3.metric("Diferencia", f"${diferencia:,.0f}/Kg", delta=-diferencia, delta_color="inverse")
+        c3.metric("Brecha de Mercado", f"${diferencia:,.0f}/Kg", delta=-diferencia, delta_color="inverse")
         
         if diferencia > 0:
-            st.warning(f"💡 **Oportunidad Comercial:** En Corabastos el {nombre_oficial} está a ${p_corabastos:,.0f}. Estás vendiendo ${diferencia:,.0f} por debajo.")
-        elif diferencia < 0:
-            st.success(f"💎 **¡Excelente!** Estás vendiendo el {nombre_oficial} ${abs(diferencia):,.0f} por encima del promedio de la central.")
-        
-        # Comparación contra costo mínimo
-        if p_corabastos < precio_m_f:
-            st.error(f"🚨 **Alerta de Supervivencia:** El precio de mercado actual (${p_corabastos}) es menor a tu costo de producción (${precio_m_f:,.0f}).")
+            st.warning(f"⚠️ Estás vendiendo ${diferencia:,.0f} por debajo del mercado.")
+        else:
+            st.success(f"✅ Tu precio está excelente frente a la central.")
     else:
-        st.info(f"🔍 No encontré '{cultivo_usuario}' en el boletín. Verifica que el nombre sea: Pepino, Lulo, Mango, Tomate de Arbol, Papa Pastusa, Cebolla, Aguacate, Fresa o Banano.")
+        st.info(f"🔍 No encontré referencia para '{row['Cultivo']}'. Intenta usar nombres simples como: Cafe, Aguacate, Lulo o Pepino.")
 
     # --- BLOQUE DE DIAGNÓSTICO Y PLAN DE ACCIÓN ---
     st.markdown("---")
