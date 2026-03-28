@@ -4,16 +4,13 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # 1️⃣ CONFIGURACIÓN DE GOOGLE SHEETS
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
-
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds_dict = st.secrets["GOOGLE_CREDS"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-
 client = gspread.authorize(creds)
 sheet = client.open("agro").sheet1
 
-# 🔥 TRAER DATOS DESDE GOOGLE SHEETS
+# 🔥 CARGAR DATOS
 data = sheet.get_all_records()
 df_existente = pd.DataFrame(data)
 
@@ -27,7 +24,7 @@ base_clima = {
 
 # --- INTERFAZ ---
 st.set_page_config(page_title="Agrocadena Pro", layout="wide")
-st.title("🚜 Consultoría Agrocadena")
+st.title("🚜 Consultoría Agrocadena: Inteligencia Agrícola")
 
 with st.sidebar:
     st.header("📝 Nuevo Registro")
@@ -36,22 +33,27 @@ with st.sidebar:
         cultivo = st.text_input("Cultivo")
         departamento = st.selectbox("Departamento", options=sorted(list(base_clima.keys())))
         
-        # --- NUEVA SECCIÓN DE UNIDADES (QUINTALES) ---
+        # --- SECCIÓN DE UNIDADES ---
         col_u1, col_u2 = st.columns(2)
         with col_u1:
-            unidad = st.radio("Unidad de medida", ["Kg", "Quintales (50kg)"])
+            unidad = st.selectbox("Unidad de medida", ["Kg", "Quintales (50kg)", "Bultos (50kg)", "Libras"])
         with col_u2:
             produccion_input = st.number_input("Cantidad", min_value=1.0)
         
-        # Convertimos a Kg para el cálculo interno
-        produccion_kg = produccion_input * 50 if unidad == "Quintales (50kg)" else produccion_input
-        
+        # Conversión lógica a Kg
+        if unidad == "Libras":
+            produccion_kg = produccion_input * 0.5
+        elif unidad in ["Quintales (50kg)", "Bultos (50kg)"]:
+            produccion_kg = produccion_input * 50
+        else:
+            produccion_kg = produccion_input
+            
         precio_venta = st.number_input("Precio de venta por Kg", min_value=0.0)
         inv_inicial = st.number_input("Inversión Inicial", min_value=0.0)
         costo_mensual = st.number_input("Costo mensual", min_value=0.0)
         meses = st.number_input("Meses", min_value=1.0)
 
-        submit = st.form_submit_button("🚀 Guardar")
+        submit = st.form_submit_button("🚀 Calcular y Guardar")
 
         if submit:
             if nombre and cultivo:
@@ -59,108 +61,105 @@ with st.sidebar:
                 precio_minimo = gasto_total / produccion_kg
                 ingreso = precio_venta * produccion_kg
                 ganancia = ingreso - gasto_total
-                temp_finca = base_clima[departamento]
-
-                # Nueva fila para Google Sheets
+                
                 nueva_fila = [
-                    nombre, cultivo, departamento,
-                    produccion_kg, # Guardamos siempre en Kg para consistencia
-                    inv_inicial, costo_mensual,
-                    meses, gasto_total, 
-                    precio_minimo,
-                    precio_venta,
-                    ingreso,
-                    ganancia
+                    nombre, cultivo, departamento, produccion_kg,
+                    inv_inicial, costo_mensual, meses, gasto_total,
+                    precio_minimo, precio_venta, ingreso, ganancia
                 ]
-
-                try:
-                    sheet.append_row(nueva_fila)
-                    st.success(f"✅ Guardado: {produccion_kg} Kg registrados")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-                if temp_finca > 27:
-                    st.warning("🔥 Riesgo de calor")
-                elif temp_finca < 17:
-                    st.info("❄️ Crecimiento lento")
-
+                
+                sheet.append_row(nueva_fila)
+                st.success("✅ Guardado en la nube")
+                st.balloons()
                 st.rerun()
-            else:
-                st.error("Completa los datos")
 
-# --- TABLA ---
-st.subheader("📊 Historial de Producción")
-
+# --- TABLA DE HISTORIAL (BLINDADA) ---
+st.subheader("📋 Historial de Producción")
 if not df_existente.empty:
-    # Creamos una copia para no dañar los datos originales
     df_tabla = df_existente.copy()
-    
-    # Columnas que queremos formatear con $
     cols_dinero = ["Inversion_Inicial", "Costo_Mensual", "Costo_Total", "Precio_Minimo", "Precio_Venta", "Ingreso", "Ganancia"]
     
-    # Limpieza: Convertimos a número, si hay error ponemos 0
     for col in cols_dinero:
         if col in df_tabla.columns:
             df_tabla[col] = pd.to_numeric(df_tabla[col], errors='coerce').fillna(0)
     
-    # Formateo seguro
     st.dataframe(df_tabla.style.format({
-        "Inversion_Inicial": "${:,.0f}",
-        "Costo_Mensual": "${:,.0f}",
-        "Costo_Total": "${:,.0f}",
-        "Precio_Minimo": "${:,.0f}",
-        "Precio_Venta": "${:,.0f}",
-        "Ingreso": "${:,.0f}",
-        "Ganancia": "${:,.0f}"
+        "Inversion_Inicial": "${:,.0f}", "Costo_Mensual": "${:,.0f}",
+        "Costo_Total": "${:,.0f}", "Precio_Minimo": "${:,.0f}",
+        "Precio_Venta": "${:,.0f}", "Ingreso": "${:,.0f}", "Ganancia": "${:,.0f}",
+        "Cantidad_Kg": "{:,.1f} kg"
     }), use_container_width=True)
 else:
-    st.info("No hay datos aún")
+    st.info("Aún no hay datos.")
 
-# ... (El resto de tu código de ELIMINAR REGISTROS y ANÁLISIS INTELIGENTE sigue igual)
-# Solo asegúrate de que en el análisis inteligente use "Cantidad_Kg" como nombre de columna.
-
+# --- ELIMINAR REGISTROS ---
 st.divider()
-st.header("📊 Análisis Inteligente")
+if not df_existente.empty:
+    with st.expander("🗑️ Zona de Peligro: Eliminar Registros"):
+        df_existente["ID"] = df_existente["Nombre_Finca"] + " - " + df_existente["Cultivo"]
+        seleccion = st.selectbox("Selecciona registro", df_existente["ID"])
+        if st.button("Confirmo que deseo eliminarlo"):
+            df_nuevo = df_existente[df_existente["ID"] != seleccion].drop(columns=["ID"])
+            sheet.clear()
+            sheet.append_row(list(df_nuevo.columns))
+            for _, row in df_nuevo.iterrows():
+                sheet.append_row(row.tolist())
+            st.rerun()
 
-if df_existente.empty:
-    st.warning("⚠️ No hay datos suficientes para análisis")
-else:
+# --- ANÁLISIS INTELIGENTE ---
+st.divider()
+st.header("📊 Análisis y Diagnóstico")
+
+if not df_existente.empty:
     df = df_existente.copy()
+    # Limpieza de columnas clave
+    for c in ["Precio_Venta", "Cantidad_Kg", "Costo_Total"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
     
-    # Aseguramos que los nombres de columnas coincidan con el Sheets
-    # Si en tu Sheets la columna se llama 'Produccion', cámbiala aquí:
-    col_prod = "Cantidad_Kg" if "Cantidad_Kg" in df.columns else "Produccion"
-
-    # Convertir a numérico y limpiar
-    columnas_num = ["Precio_Venta", col_prod, "Costo_Total"]
-    for col in columnas_num:
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-
-    df[col_prod] = df[col_prod].replace(0, 1)
-
-    # Cálculos
-    df["Costo_por_Kg"] = df["Costo_Total"] / df[col_prod]
-    df["Ganancia"] = (df["Precio_Venta"] * df[col_prod]) - df["Costo_Total"]
-
-    # Promedios
+    df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"].replace(0, 1)
+    
+    # Promedio por cultivo para eficiencia
     promedios = df.groupby("Cultivo")["Costo_por_Kg"].mean().reset_index()
     promedios.rename(columns={"Costo_por_Kg": "Promedio_Cultivo"}, inplace=True)
     df = df.merge(promedios, on="Cultivo", how="left")
-    
-    df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"]) * 100
+    df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"].replace(0, 1)) * 100
 
-    st.subheader("🔎 Análisis por finca")
-    finca_sel = st.selectbox("Selecciona una finca", df["Nombre_Finca"].unique())
+    finca_sel = st.selectbox("Selecciona una finca para diagnóstico", df["Nombre_Finca"].unique())
     row = df[df["Nombre_Finca"] == finca_sel].iloc[0]
+    ganancia_f = float(row["Ganancia"])
+    temp_f = base_clima.get(row["Departamento"], 20)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Costo por Kg", f"${row['Costo_por_Kg']:,.0f}")
-    c2.metric("Producción Total", f"{row[col_prod]:,.0f} Kg", f"{row[col_prod]/50:.1f} qq")
-    c3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%", delta_color="inverse")
-    c4.metric("Ganancia Est.", f"${row['Ganancia']:,.0f}")
+    # MÉTRICAS
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Costo/Kg", f"${row['Costo_por_Kg']:,.0f}")
+    m2.metric("Producción", f"{row['Cantidad_Kg']:,.0f} Kg", f"{row['Cantidad_Kg']/50:.1f} bultos/qq")
+    m3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%", delta_color="inverse")
+    m4.metric("Ganancia", f"${ganancia_f:,.0f}")
+
+    # DIAGNÓSTICO
+    st.subheader("💡 Recomendación de Consultoría")
     
-    # Diagnóstico rápido
-    if row["Ganancia"] > 0:
-        st.success(f"🟢 La finca {finca_sel} es RENTABLE.")
-    else:
-        st.error(f"🔴 La finca {finca_sel} está operando con PÉRDIDA.")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if row["Eficiencia_%"] <= 0:
+            st.success(f"✅ Tu costo está {abs(row['Eficiencia_%']):.1f}% por debajo del promedio. ¡Excelente control!")
+        else:
+            st.error(f"⚠️ Estás gastando {row['Eficiencia_%']:.1f}% más que el promedio. Revisa insumos.")
+
+    with col_b:
+        if ganancia_f > 0:
+            st.success("🟢 Negocio rentable hoy.")
+        else:
+            st.error("🔴 Estás operando en pérdida.")
+
+    # PLAN DE ACCIÓN
+    if ganancia_f < 0 and row["Eficiencia_%"] > 0:
+        st.warning("📌 **Plan:** Tus costos son altos. Prioriza negociar fertilizantes por volumen o reducir jornales.")
+    elif ganancia_f < 0 and row["Eficiencia_%"] <= 0:
+        st.info("📌 **Plan:** Eres eficiente, pero el precio de venta es bajo. Busca vender directo sin intermediarios.")
+    elif ganancia_f > 0:
+        st.success("📌 **Plan:** Mantén la estrategia. Podrías aumentar el área de siembra para escala.")
+
+    # CLIMA
+    if temp_f > 27:
+        st.warning(f"🌡️ **Nota Climática:** En {row['Departamento']} hace calor ({temp_f}°C). Según tus guías: Cuidado con el estrés hídrico.")
