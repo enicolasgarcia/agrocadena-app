@@ -14,12 +14,26 @@ sheet = client.open("agro").sheet1
 data = sheet.get_all_records()
 df_existente = pd.DataFrame(data)
 
-# 2️⃣ BASE CLIMÁTICA
+# 2️⃣ BASE CLIMÁTICA Y DE MERCADO (CORABASTOS 19 MARZO)
 base_clima = {
     "Cundinamarca": 19, "Antioquia": 22, "Valle del Cauca": 24,
     "Huila": 25, "Tolima": 26, "Santander": 23, "Boyacá": 16,
     "Magdalena": 28, "Meta": 26, "Nariño": 18, "Casanare": 27,
     "Quindío": 21, "Caldas": 21, "Risaralda": 21, "Bolívar": 28
+}
+
+# Precios extraídos de tu boletín (Precio por Kg)
+precios_corabastos = {
+    "pepino": 5000,
+    "lulo": 5200,
+    "mango tommy": 9091,
+    "mango de azucar": 6000,
+    "tomate de arbol": 2800,
+    "papa pastusa": 1500,
+    "cebolla": 1100,
+    "aguacate": 5000,
+    "fresa": 6500,
+    "banano": 2000
 }
 
 # --- INTERFAZ ---
@@ -30,18 +44,15 @@ with st.sidebar:
     st.header("📝 Nuevo Registro")
     with st.form("registro_finca"):
         nombre = st.text_input("Nombre de la Finca")
-        cultivo = st.text_input("Cultivo")
+        cultivo = st.text_input("Cultivo (Ej: Pepino, Lulo, Papa Pastusa)")
         departamento = st.selectbox("Departamento", options=sorted(list(base_clima.keys())))
         
-        # --- SECCIÓN DE UNIDADES ACTUALIZADA ---
         col_u1, col_u2 = st.columns(2)
         with col_u1:
-            # Aquí añadimos todas las unidades que pediste
             unidad = st.selectbox("Unidad de medida", ["Kg", "Quintales (50kg)", "Bultos (50kg)", "Libras"])
         with col_u2:
             produccion_input = st.number_input("Cantidad", min_value=1.0)
         
-        # Conversión lógica a Kg
         if unidad == "Libras":
             produccion_kg = produccion_input * 0.5
         elif unidad in ["Quintales (50kg)", "Bultos (50kg)"]:
@@ -89,13 +100,13 @@ if not df_existente.empty:
         "Cantidad_Kg": "{:,.1f} kg"
     }), use_container_width=True)
 
-# --- ANÁLISIS INTELIGENTE (EL PLAN DE ACCIÓN ESTÁ AQUÍ) ---
+# --- ANÁLISIS INTELIGENTE ---
 st.divider()
 st.header("📊 Análisis y Diagnóstico")
 
 if not df_existente.empty:
     df = df_existente.copy()
-    for c in ["Precio_Venta", "Cantidad_Kg", "Costo_Total", "Ganancia"]:
+    for c in ["Precio_Venta", "Cantidad_Kg", "Costo_Total", "Ganancia", "Precio_Minimo"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
     
     df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"].replace(0, 1)
@@ -109,9 +120,10 @@ if not df_existente.empty:
     finca_sel = st.selectbox("Selecciona una finca para diagnóstico", df["Nombre_Finca"].unique())
     row = df[df["Nombre_Finca"] == finca_sel].iloc[0]
     
-    # Aseguramos que los valores sean tratables
     ganancia_f = float(row["Ganancia"])
     eficiencia_f = float(row["Eficiencia_%"])
+    precio_v_f = float(row["Precio_Venta"])
+    precio_m_f = float(row["Precio_Minimo"])
     temp_f = base_clima.get(row["Departamento"], 20)
 
     # MÉTRICAS VISUALES
@@ -121,86 +133,74 @@ if not df_existente.empty:
     m3.metric("Eficiencia", f"{eficiencia_f:.1f}%", delta_color="inverse")
     m4.metric("Ganancia Est.", f"${ganancia_f:,.0f}")
 
+    # --- COMPARATIVA DE MERCADO (BOLETÍN CORABASTOS) ---
+    st.markdown("---")
+    st.subheader("⚖️ Comparativa Corabastos vs Tu Finca")
+    
+    cultivo_nombre = str(row["Cultivo"]).lower().strip()
+    # Buscamos si el cultivo está en el diccionario de precios
+    p_corabastos = 0
+    for key in precios_corabastos:
+        if key in cultivo_nombre:
+            p_corabastos = precios_corabastos[key]
+            break
+
+    if p_corabastos > 0:
+        diferencia = p_corabastos - precio_v_f
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Precio Corabastos", f"${p_corabastos:,.0f}/Kg")
+        c2.metric("Tu Precio Venta", f"${precio_v_f:,.0f}/Kg")
+        c3.metric("Diferencia", f"${diferencia:,.0f}/Kg", delta=-diferencia, delta_color="inverse")
+        
+        if diferencia > 0:
+            st.warning(f"🔥 **Oportunidad:** Estás vendiendo ${diferencia:,.0f} por debajo de Corabastos. Tienes margen para negociar mejor.")
+        elif diferencia < 0:
+            st.success(f"💎 **¡Excelente!** Estás vendiendo ${abs(diferencia):,.0f} por encima del promedio de Corabastos.")
+        
+        # Alerta de pérdida real
+        if p_corabastos < precio_m_f:
+            st.error(f"🚨 **Alerta de Mercado:** El precio actual en Corabastos (${p_corabastos}) no cubre tu costo mínimo (${precio_m_f:,.0f}).")
+    else:
+        st.info("💡 No tenemos precio de referencia en el boletín para este cultivo.")
+
     # --- BLOQUE DE DIAGNÓSTICO Y PLAN DE ACCIÓN ---
     st.markdown("---")
     st.subheader("💡 Recomendación de Consultoría")
     
-    # 1. Resultado Financiero (El cuadro que viste en rojo/verde)
     if ganancia_f > 0:
-        st.success(f"🟢 La finca {finca_sel} está operando con GANANCIA.")
-    elif ganancia_f < 0:
-        st.error(f"🔴 La finca {finca_sel} está operando con PÉRDIDA.")
+        st.success(f"🟢 La finca {finca_sel} es RENTABLE.")
     else:
-        st.info(f"🟡 La finca {finca_sel} está en punto de equilibrio.")
+        st.error(f"🔴 La finca {finca_sel} presenta PÉRDIDA.")
 
-    # 2. Recomendación según Eficiencia
     col_a, col_b = st.columns(2)
     with col_a:
         st.markdown("**Análisis de Costos:**")
         if eficiencia_f <= 0:
-            st.info(f"✅ Eres eficiente: Tus costos son un {abs(eficiencia_f):.1f}% menores al promedio.")
+            st.info(f"✅ Eficiencia: Costos {abs(eficiencia_f):.1f}% menores al promedio.")
         else:
-            st.warning(f"⚠️ Costos elevados: Estás un {eficiencia_f:.1f}% por encima del promedio del sector.")
+            st.warning(f"⚠️ Costos: {eficiencia_f:.1f}% superiores al promedio.")
 
     with col_b:
         st.markdown("**Plan de Acción:**")
-        # Aquí está la lógica del plan que te faltaba
         if ganancia_f < 0 and eficiencia_f > 0:
-            st.write("👉 **Urgente:** Reduce costos fijos y revisa el precio de los insumos.")
+            st.write("👉 **Urgente:** Reduce costos de producción.")
         elif ganancia_f < 0 and eficiencia_f <= 0:
-            st.write("👉 **Estrategia:** Tu costo es bueno, pero el precio de venta es muy bajo. ¡Busca mejores mercados!")
-        elif ganancia_f > 0 and eficiencia_f > 10:
-            st.write("👉 **Optimización:** Ganas dinero, pero podrías ganar mucho más si controlas mejor los gastos.")
+            st.write("👉 **Mercado:** Tu costo es bueno, pero el precio de venta es bajo. Busca venta directa.")
         else:
-            st.write("👉 **Escalabilidad:** ¡Buen trabajo! Considera aumentar tu área de producción.")
+            st.write("👉 **Escala:** Buen manejo. Podrías aumentar área de siembra.")
 
-    # 3. Nota Climática (Basada en tu infografía)
-    st.info(f"🌡️ **Dato Climático:** En {row['Departamento']} la temp. promedio es {temp_f}°C. Ajusta tu riego según la guía técnica.")
-
-# ==============================
-# 🗑️ MANTENIMIENTO: ELIMINAR REGISTROS
-# ==============================
-
+# --- MANTENIMIENTO: ELIMINAR REGISTROS ---
 st.divider()
-st.subheader("🗑️ Zona de Corrección: Eliminar registro")
-
-# Usamos el dataframe original que viene de Google Sheets
+st.subheader("🗑️ Zona de Corrección")
 if not df_existente.empty:
-    # 1. Preparar la lista de selección para que sea clara
     df_borrar = df_existente.copy()
-    
-    # Creamos un ID visual para que el usuario sepa qué está borrando
     df_borrar["ID_Visual"] = df_borrar["Nombre_Finca"].astype(str) + " - " + df_borrar["Cultivo"].astype(str)
-
-    seleccion = st.selectbox(
-        "Busca y selecciona la finca que deseas borrar:",
-        options=df_borrar["ID_Visual"].unique(),
-        help="Cuidado: Esta acción eliminará el dato de Google Sheets permanentemente."
-    )
-
+    seleccion = st.selectbox("Selecciona registro para borrar", options=df_borrar["ID_Visual"].unique())
     if st.button("❌ Eliminar Permanentemente"):
-        # 2. Filtrar el dataframe para quitar la fila seleccionada
-        # (Quitamos el ID_Visual antes de guardar)
         df_nuevo = df_borrar[df_borrar["ID_Visual"] != seleccion].drop(columns=["ID_Visual"])
-
-        try:
-            # 3. Limpiar la hoja de Google Sheets
-            sheet.clear()
-            
-            # 4. Volver a escribir los encabezados
-            encabezados = list(df_nuevo.columns)
-            sheet.append_row(encabezados)
-            
-            # 5. Escribir los datos restantes (si los hay)
-            if not df_nuevo.empty:
-                # Convertimos el DF a una lista de listas para subirlo todo de golpe
-                filas_nuevas = df_nuevo.values.tolist()
-                sheet.append_rows(filas_nuevas)
-
-            st.success(f"✅ Registro '{seleccion}' eliminado con éxito de la nube.")
-            st.rerun() # Refrescar la app para ver la tabla limpia
-            
-        except Exception as e:
-            st.error(f"Hubo un problema al conectar con Google Sheets: {e}")
-else:
-    st.info("No hay registros en la base de datos para eliminar.")
+        sheet.clear()
+        sheet.append_row(list(df_nuevo.columns))
+        if not df_nuevo.empty:
+            sheet.append_rows(df_nuevo.values.tolist())
+        st.success("Registro eliminado.")
+        st.rerun()
