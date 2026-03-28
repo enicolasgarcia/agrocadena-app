@@ -68,9 +68,9 @@ if submit:
 
         nueva_fila = [
             nombre, cultivo, departamento,
-            produccion_kg,  # 🔥 SIEMPRE en Kg
+            produccion_kg,
             inv_inicial, costo_mensual,
-            meses, gasto_total, 
+            meses, gasto_total,
             precio_minimo,
             precio_venta,
             ingreso,
