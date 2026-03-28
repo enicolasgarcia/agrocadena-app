@@ -36,7 +36,6 @@ with st.sidebar:
         cultivo = st.text_input("Cultivo")
         departamento = st.selectbox("Departamento", options=sorted(list(base_clima.keys())))
         produccion = st.number_input("Producción", min_value=1.0)
-        unidad = st.selectbox("Unidad de producción",["Kg", "Bultos (50kg)", "Libras (0.5kg)", "Quintales (50kg)"])
         precio_venta = st.number_input("Precio de venta por Kg", min_value=0.0)
         inv_inicial = st.number_input("Inversión Inicial", min_value=0.0)
         costo_mensual = st.number_input("Costo mensual", min_value=0.0)
@@ -44,53 +43,40 @@ with st.sidebar:
 
         submit = st.form_submit_button("🚀 Guardar")
 
-if submit:
-    if nombre and cultivo:
+        if submit:
+            if nombre and cultivo:
+                gasto_total = inv_inicial + (costo_mensual * meses)
+                precio_minimo = gasto_total / produccion
+                ingreso = precio_venta * produccion
+                ganancia = ingreso - gasto_total
+                temp_finca = base_clima[departamento]
 
-        # 🔥 CONVERSIÓN A KG
-        if unidad == "Kg":
-            produccion_kg = produccion
-        elif unidad == "Bultos":
-            produccion_kg = produccion * 50
-        elif unidad == "Libras":
-            produccion_kg = produccion * 0.5
-        elif unidad == "Quintales":
-            produccion_kg = produccion * 50
+                # 🔥 IMPORTANTE: incluir Cantidad_kg
+                nueva_fila = [
+                    nombre, cultivo, departamento,
+                    produccion,  # 👈 clave para el análisis
+                    inv_inicial, costo_mensual,
+                    meses, gasto_total, 
+                    precio_minimo,
+                    precio_venta,
+                    ingreso,
+                    ganancia
+                ]
 
-        gasto_total = inv_inicial + (costo_mensual * meses)
+                try:
+                    sheet.append_row(nueva_fila)
+                    st.success("✅ Guardado en Google Sheets")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
-        # 🔥 CÁLCULOS CON KG
-        precio_minimo = gasto_total / produccion_kg
-        ingreso = precio_venta * produccion_kg
-        ganancia = ingreso - gasto_total
+                if temp_finca > 27:
+                    st.warning("🔥 Riesgo de calor")
+                elif temp_finca < 17:
+                    st.info("❄️ Crecimiento lento")
 
-        temp_finca = base_clima[departamento]
-
-        nueva_fila = [
-            nombre, cultivo, departamento,
-            produccion_kg,
-            inv_inicial, costo_mensual,
-            meses, gasto_total,
-            precio_minimo,
-            precio_venta,
-            ingreso,
-            ganancia
-        ]
-
-        try:
-            sheet.append_row(nueva_fila)
-            st.success("✅ Guardado en Google Sheets")
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-        if temp_finca > 27:
-            st.warning("🔥 Riesgo de calor")
-        elif temp_finca < 17:
-            st.info("❄️ Crecimiento lento")
-
-        st.rerun()
-    else:
-        st.error("Completa los datos")
+                st.rerun()
+            else:
+                st.error("Completa los datos")
 
 # --- TABLA ---
 st.subheader("📊 Historial")
@@ -146,41 +132,27 @@ if df_existente.empty:
     st.warning("⚠️ No hay datos suficientes para análisis")
 else:
     df = df_existente.copy()
-
-    # 🔥 Asegurar columnas (por si faltan)
-    columnas = ["Precio_Venta", "Cantidad_Kg", "Costo_Total"]
-    for col in columnas:
-        if col not in df.columns:
-            df[col] = 0
-
-    # 🔥 Convertir a numérico
-    for col in columnas:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
     df = df.fillna(0)
 
-    # 🔥 Evitar división por 0
-    df["Cantidad_Kg"] = df["Cantidad_Kg"].replace(0, 1)
+    # 🔥 PRIMERO: convertir a numérico
+    df["Precio_Venta"] = pd.to_numeric(df["Precio_Venta"], errors="coerce")
+    df["Cantidad_Kg"] = pd.to_numeric(df["Cantidad_Kg"], errors="coerce")
+    df["Costo_Total"] = pd.to_numeric(df["Costo_Total"], errors="coerce")
 
-    # 🔥 Cálculos
+    # 🔥 DESPUÉS: cálculos
     df["Costo_por_Kg"] = df["Costo_Total"] / df["Cantidad_Kg"]
     df["Ingreso"] = df["Precio_Venta"] * df["Cantidad_Kg"]
     df["Ganancia"] = df["Ingreso"] - df["Costo_Total"]
 
-    # 🔥 Promedio por cultivo
+    # Promedio por cultivo
     promedios = df.groupby("Cultivo")["Costo_por_Kg"].mean().reset_index()
     promedios.rename(columns={"Costo_por_Kg": "Promedio_Cultivo"}, inplace=True)
 
     df = df.merge(promedios, on="Cultivo", how="left")
 
-    # 🔥 Evitar división por 0 en eficiencia
-    df["Promedio_Cultivo"] = df["Promedio_Cultivo"].replace(0, 1)
-
-    df["Eficiencia_%"] = (
-        (df["Costo_por_Kg"] - df["Promedio_Cultivo"])
-        / df["Promedio_Cultivo"]
-    ) * 100
-
+    # Eficiencia
+    df["Eficiencia_%"] = ((df["Costo_por_Kg"] - df["Promedio_Cultivo"]) / df["Promedio_Cultivo"]) * 100
+  
     # --- SELECTOR ---
     st.subheader("🔎 Análisis por finca")
 
@@ -198,9 +170,9 @@ else:
     col1.metric("Costo por Kg", f"${row['Costo_por_Kg']:,.0f}")
     col2.metric("Promedio del cultivo", f"${row['Promedio_Cultivo']:,.0f}")
     col3.metric("Eficiencia", f"{row['Eficiencia_%']:.1f}%")
-
     ganancia_valor = row.get("Ganancia", 0)
 
+    # 🔥 Convertir a número seguro
     try:
         ganancia_valor = float(ganancia_valor)
     except:
@@ -216,7 +188,7 @@ else:
     else:
         st.error("⚠️ Estás por encima del promedio (costos altos)")
 
-    # --- RESULTADO FINANCIERO ---
+    # --- GANANCIA / PÉRDIDA ---
     st.subheader("💰 Resultado financiero")
 
     if ganancia_valor > 0:
